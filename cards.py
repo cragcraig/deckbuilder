@@ -79,6 +79,7 @@ _alt_to_sym = {'Green': '{G}', 'Red': '{R}', 'Black': '{B}', 'Blue': '{U}',
                'White': '{W}', 'Variable Colorless': '{X}', 'Tap': '{T}',
                'None': 'None'}
 # Gatherer scrape div ids.
+scrapeid_cardstyles = ['', '_ctl05', '_ctl06']
 scrapeid_name = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_nameRow'
 scrapeid_mana = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_manaRow'
 scrapeid_cmc = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_cmcRow'
@@ -99,18 +100,27 @@ class Card:
         self.flavor = None
         self.power = None
         self.toughness = None
-        self.cardstyle = 0
+        self.cardback = None
         self.loaded = False
 
-    def load(self):
-        """Attempts to load the card from gatherer.wizards.com."""
-        response = urllib2.urlopen(url(self.name))
-        html = response.read()
-        soup = BeautifulSoup.BeautifulSoup(html)
+    def load(self, soup=None):
+        """Attempts to scrape card data from gatherer.wizards.com."""
+        if not soup:
+            response = urllib2.urlopen(url(self.name))
+            html = response.read()
+            soup = BeautifulSoup.BeautifulSoup(html)
         # Scrape data.
         style = self._checkCardstyle(soup)
         if style is None:
             return
+        # Scrape card back, if needed.
+        if style == scrapeid_cardstyles[1]:
+            self.cardback = Card(_scrape(soup, scrapeid_name
+                                               % scrapeid_cardstyles[2]))
+            self.cardback.load(soup=soup)
+            if not self.cardback.loaded:
+                return
+        # Scrape card data.
         name = _scrape(soup, scrapeid_name % style)
         self.name = name
         self.cost = _scrape_cost(soup, scrapeid_mana % style)
@@ -133,10 +143,9 @@ class Card:
         Currently normal single sided cards and Innistrad double-faced cards
         are supported.
         """
-        styles = ['', '_ctl05', '_ctl06']
-        for s in styles:
+        for s in scrapeid_cardstyles:
             name =_scrape(soup, scrapeid_name % s)
-            if name and self.name.lower() == name.lower():
+            if name and self.name and self.name.lower() == name.lower():
                 return s
         return None
 

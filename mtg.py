@@ -141,7 +141,12 @@ def cmd_card(arg):
     if not card.loaded:
         print('Unable to find card data.')
         return False
-    print('\n' + str(card))
+    if card.cardback:
+        print('\n### FRONT ###\n' + str(card))
+    else:
+        print('\n' + str(card))
+    if card.cardback:
+        print('\n### BACK ###\n' + str(card.cardback))
     return False
 
 # Global state.
