@@ -25,18 +25,18 @@ def _scrape_raw(soup, title):
     value = scrape.find('div', attrs={'class': 'value'})
     return value
 
-def _scrape_cost(soup):
+def _scrape_cost(soup, manaid):
     """Scrapte mana cost as a list."""
-    value = _scrape_raw(soup, scrapeid_mana)
+    value = _scrape_raw(soup, manaid)
     if not value:
         return None
     imgs = value.findAll('img')
     l = [_alt_to_id(t['alt']) for t in imgs]
     return ''.join(l)
 
-def _scrape_pt(soup):
+def _scrape_pt(soup, ptid):
     """Scrape power / toughness."""
-    content = _scrape(soup, scrapeid_pt)
+    content = _scrape(soup, ptid)
     m = re.search('(\d+)\D+(\d+)', content)
     return (m.group(1), m.group(2))
 
@@ -79,13 +79,13 @@ _alt_to_sym = {'Green': '{G}', 'Red': '{R}', 'Black': '{B}', 'Blue': '{U}',
                'White': '{W}', 'Variable Colorless': '{X}', 'Tap': '{T}',
                'None': 'None'}
 # Gatherer scrape div ids.
-scrapeid_name = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent_nameRow'
-scrapeid_mana = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent_manaRow'
-scrapeid_cmc = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent_cmcRow'
-scrapeid_type = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent_typeRow'
-scrapeid_text = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent_textRow'
-scrapeid_flvr = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent_flavorRow'
-scrapeid_pt = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent_ptRow'
+scrapeid_name = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_nameRow'
+scrapeid_mana = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_manaRow'
+scrapeid_cmc = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_cmcRow'
+scrapeid_type = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_typeRow'
+scrapeid_text = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_textRow'
+scrapeid_flvr = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_flavorRow'
+scrapeid_pt = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_ptRow'
 
 
 class Card:
@@ -99,6 +99,7 @@ class Card:
         self.flavor = None
         self.power = None
         self.toughness = None
+        self.cardstyle = 0
         self.loaded = False
 
     def load(self):
@@ -107,30 +108,44 @@ class Card:
         html = response.read()
         soup = BeautifulSoup.BeautifulSoup(html)
         # Scrape data.
-        name = _scrape(soup, scrapeid_name)
-        if not name or self.name.lower() != name.lower():
+        style = self._checkCardstyle(soup)
+        if style is None:
             return
+        name = _scrape(soup, scrapeid_name % style)
         self.name = name
-        self.cost = _scrape_cost(soup)
-        self.convertedCost = _scrape(soup, scrapeid_cmc)
-        types = _scrape(soup, scrapeid_type).split('?')
+        self.cost = _scrape_cost(soup, scrapeid_mana % style)
+        self.convertedCost = _scrape(soup, scrapeid_cmc % style)
+        types = _scrape(soup, scrapeid_type % style).split('?')
         self.types = types[0].split()
         if (len(types) > 1):
             self.subtypes = types[1].split()
         else:
             self.subtypes = []
-        self.text = _scrape_text(soup, scrapeid_text)
-        self.flavor = _scrape(soup, scrapeid_flvr)
+        self.text = _scrape_text(soup, scrapeid_text % style)
+        self.flavor = _scrape(soup, scrapeid_flvr % style)
         if self.isCreature():
-            self.power, self.toughness = _scrape_pt(soup)
+            self.power, self.toughness = _scrape_pt(soup, scrapeid_pt % style)
         self.loaded = True
+
+    def _checkCardstyle(self, soup):
+        """Check the card style.
+
+        Currently normal single sided cards and Innistrad double-faced cards
+        are supported.
+        """
+        styles = ['', '_ctl05', '_ctl06']
+        for s in styles:
+            name =_scrape(soup, scrapeid_name % s)
+            if name and self.name.lower() == name.lower():
+                return s
+        return None
 
     def isCreature(self):
         """Return True if card is of type Creature."""
         return 'Creature' in self.types
 
     def __str__(self):
-        ret = self.name + '\n' +\
+        ret = str(self.name) + '\n' +\
               'cost: '.ljust(10) + str(self.cost) +\
               ' (' + str(self.convertedCost) + ')'
         if len(self.types):
