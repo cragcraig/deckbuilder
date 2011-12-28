@@ -159,12 +159,10 @@ class Card:
               ' (' + str(self.convertedCost) + ')'
         if len(self.types):
             ret += '\n' + 'types:'.ljust(10)
-        for t in self.types:
-            ret += t + ' '
+        ret += ' '.join(self.types)
         if len(self.subtypes):
             ret += '\n' + 'subtypes:'.ljust(10)
-        for t in self.subtypes:
-            ret += t + ' '
+        ret += ' '.join(self.subtypes)
         if self.isCreature():
               ret += '\n' + 'P/T:'.ljust(10) + str(self.power) +\
                      ' / ' + str(self.toughness)
@@ -177,3 +175,9 @@ class Card:
             for l in string.split(str(self.flavor), '\n'):
                 ret += '\n"' + textwrap.fill(l, 50).replace('?', '\n-') + '"'
         return ret
+
+    def snippet(self):
+        """Return a one line text snippet summarizing card."""
+        return str(self.name).ljust(25) +\
+               (' (' + ' '.join(self.types) + ') ').ljust(25) +\
+               str(self.cost).ljust(17)

@@ -123,8 +123,9 @@ def cmd_list(arg):
     if not active_deck:
         print('No active deck.')
         return False
-    for k,v in active_deck.cards.iteritems():
-        print(str(v).rjust(3) + ' ' + k)
+    for c in active_deck.manaSorted():
+        print(str(active_deck.cards[c]).rjust(3) + ' - ' +
+              active_deck.cardData[c].snippet())
     return False
 
 def cmd_link(arg):
@@ -136,17 +137,23 @@ def cmd_link(arg):
 
 def cmd_card(arg):
     """Display card info from database."""
-    card = cards.Card(arg)
-    card.load()
+    if not arg:
+        print('usage: card <CARD>')
+        return False
+    # Use preloaded data if already in active deck, otherwise fetch.
+    if active_deck and arg.lower() in active_deck.cardData:
+        card = active_deck.cardData[arg.lower()]
+    else:
+        card = cards.Card(arg)
+        card.load()
     if not card.loaded:
         print('Unable to find card data.')
         return False
     if card.cardback:
         print('\n### FRONT ###\n' + str(card))
+        print('\n### BACK ###\n' + str(card.cardback))
     else:
         print('\n' + str(card))
-    if card.cardback:
-        print('\n### BACK ###\n' + str(card.cardback))
     return False
 
 # Global state.
