@@ -181,3 +181,12 @@ class Card:
         return str(self.name).ljust(25) +\
                (' (' + ' '.join(self.types) + ') ').ljust(25) +\
                str(self.cost).ljust(17)
+
+    def color(self):
+        """Get the card color."""
+        if not self.cost:
+            return None
+        s = re.findall('[RGBWU]', self.cost)
+        if not s:
+            return None
+        return ''.join(sorted(list(set(s))))

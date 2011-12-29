@@ -1,4 +1,7 @@
+import random
+
 import cards
+
 
 def filename(name):
     """Returns the filename associated with the deck name."""
@@ -14,7 +17,10 @@ class Deck:
 
     def list(self):
         """Return a list of the cards in the deck."""
-        return [k for i in xrange(v) for k,v in self.cards.iteritems()]
+        r = []
+        for k,v in self.cards.iteritems():
+            r.extend([k] * v)
+        return r
 
     def size(self):
         """Get the deck size."""
@@ -27,11 +33,16 @@ class Deck:
             return
         if card in self.cards:
             self.cards[card] += num
+            return True
         elif self.fetch(card):
             self.cards[card] = num
+            return True
+        return False
 
     def remove(self, card, num=1):
         """Remove a card by name."""
+        if num < 1:
+            return
         card = card.lower()
         if card not in self.cards:
             return
@@ -61,3 +72,8 @@ class Deck:
         """Return a list of cards sorted by converted mana cost."""
         return sorted(self.cards.iterkeys(),
                       key=lambda c: self.cardData[c].convertedCost)
+
+    def randCards(self, num):
+        """Generate a random draw of num cards from the deck."""
+        num = min(num, self.size())
+        return random.sample(self.list(), num)
