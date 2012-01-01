@@ -1,6 +1,7 @@
 from __future__ import print_function, with_statement
 
 import re
+import string
 import sys
 import cPickle as pickle
 
@@ -50,8 +51,8 @@ def prompt_cmd():
 def print_deckcardline(card):
     """Print a snippet line for a card in the active deck."""
     print(str(active_deck.deck.cards[card]).rjust(3) + ' | ', end='')
-    mprint(active_deck.cardData[card].color(),
-           active_deck.cardData[card].snippet())
+    mprint(active_deck.cardData.data[card].color(),
+           active_deck.cardData.data[card].snippet())
 
 _ansicode = {
     'black': '\x1b[30m',
@@ -104,8 +105,9 @@ def cmd_exit(arg, num):
 def cmd_help(arg, num):
     """Print help text."""
     print('Avaliable commands:')
+    w = max((len(h) for h in cmd_dict.iterkeys())) + 1
     for cmd in sorted(cmd_dict.keys()):
-        print(cmd.ljust(10) + " - " + cmd_dict[cmd].__doc__)
+        print(cmd.ljust(w) + " - " + cmd_dict[cmd].__doc__)
 
 def cmd_deck(arg, num):
     """Set the active deck."""
@@ -151,25 +153,51 @@ def cmd_add(arg, num):
     else:
         print('Unable to find card data.')
 
+def cmd_addside(arg, num):
+    """Add a card to the active deck's sideboard."""
+    if not arg:
+        print('usage: addside [<NUM>] <CARD>')
+        return
+    elif not active_deck:
+        print('No active deck.')
+        return
+    if active_deck.sideboard.add(arg, num):
+        cmd_listside('', 0)
+    else:
+        print('Unable to find card data.')
+
 def cmd_remove(arg, num):
     """Remove a card from the active deck."""
     if not arg:
-        print('usage: remove [<NUM>] <CARD>')
+        print('usage: rm [<NUM>] <CARD>')
         return
     if not active_deck:
         print('No active deck.')
         return
     active_deck.deck.remove(arg, num)
+    cmd_list('', 0)
+
+def cmd_removeside(arg, num):
+    """Remove a card from the active deck's sideboard."""
+    if not arg:
+        print('usage: rmside [<NUM>] <CARD>')
+        return
+    if not active_deck:
+        print('No active deck.')
+        return
+    active_deck.sideboard.remove(arg, num)
+    cmd_listside('', 0)
 
 def cmd_stats(arg, num):
     """Print active deck stats."""
     if not active_deck:
         print('No active deck.')
         return
-    print('size: %d' % active_deck.deck.size())
+    print('deck size: %d' % active_deck.deck.size())
+    print('sideboard size: %d' % active_deck.sideboard.size())
 
 def cmd_list(arg, num):
-    """Print active deck list."""
+    """Print active deck's main deck listing."""
     if not active_deck:
         print('No active deck.')
         return
@@ -179,7 +207,27 @@ def cmd_list(arg, num):
     print(sep)
     for c in active_deck.deck.manaSorted():
         print_deckcardline(c)
-    print(sep + '\nTotal: ' + str(active_deck.deck.size()))
+    print('Deck: ' + str(active_deck.deck.size()))
+
+def cmd_listside(arg, num):
+    """Print active deck's sideboad listing."""
+    if not active_deck:
+        print('No active deck.')
+        return
+    sep = '-' * 80
+    print(string.center(' Sideboard ', 80, '-'))
+    for c in active_deck.sideboard.manaSorted():
+        print_deckcardline(c)
+    if active_deck.sideboard.size() == 0:
+        print('-empty-'.center(80))
+
+def cmd_listall(arg, num):
+    """Print active deck listing."""
+    if not active_deck:
+        print('No active deck.')
+        return
+    cmd_list('', 0)
+    cmd_listside('', 0)
 
 def cmd_link(arg, num):
     """Print the Gatherer link for a card."""
@@ -194,8 +242,8 @@ def cmd_card(arg, num):
         print('usage: card <CARD>')
         return
     # Use preloaded data if already in active deck, otherwise fetch.
-    if active_deck and arg.lower() in active_deck.cardData:
-        card = active_deck.cardData[arg.lower()]
+    if active_deck and arg.lower() in active_deck.cardData.data:
+        card = active_deck.cardData.data[arg.lower()]
     else:
         card = cards.Card(arg)
         card.load()
@@ -218,7 +266,7 @@ def cmd_hand(arg, num):
         return
     print('')
     for c in active_deck.deck.randCards(7):
-        d = active_deck.cardData[c]
+        d = active_deck.cardData.data[c]
         mprint(d.color(), d.snippet())
     print('')
 
@@ -247,14 +295,16 @@ cmd_dict = {
     'deck': cmd_deck,
     'deckname': cmd_deckname,
     'save': cmd_save,
-    'add': cmd_add,
     'randhand': cmd_hand,
-    'remove': cmd_remove,
-    'stats': cmd_stats,
+    'add': cmd_add,
+    'rm': cmd_remove,
+    'sideboard': cmd_addside,
+    'sideboardrm': cmd_removeside,
+    'size': cmd_stats,
     'managram': cmd_managram,
     'card': cmd_card,
     'link': cmd_link,
-    'list': cmd_list,
+    'ls': cmd_listall,
     'togglecolor': cmd_togglecolor,
     'exit': cmd_exit}
 

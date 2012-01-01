@@ -158,10 +158,10 @@ class Card:
               'cost: '.ljust(10) + str(self.cost) +\
               ' (' + str(self.convertedCost) + ')'
         if len(self.types):
-            ret += '\n' + 'types:'.ljust(10)
+            ret += '\n' + 'type:'.ljust(10)
         ret += ' '.join(self.types)
         if len(self.subtypes):
-            ret += '\n' + 'subtypes:'.ljust(10)
+            ret += '\n' + 'subtype:'.ljust(10)
         ret += ' '.join(self.subtypes)
         if self.isCreature():
               ret += '\n' + 'P/T:'.ljust(10) + str(self.power) +\
