@@ -1,3 +1,5 @@
+from __future__ import print_function, with_statement
+
 import re
 import sys
 import cPickle as pickle
@@ -47,8 +49,8 @@ def prompt_cmd():
 
 def print_deckcardline(card):
     """Print a snippet line for a card in the active deck."""
+    print(str(active_deck.deck.cards[card]).rjust(3) + ' | ', end='')
     mprint(active_deck.cardData[card].color(),
-           str(active_deck.cards[card]).rjust(3) + ' - ' +
            active_deck.cardData[card].snippet())
 
 _ansicode = {
@@ -81,7 +83,7 @@ def cprint(color, s):
         print(s)
 
 def mprint(cardcolor, s):
-    """Print a string in the specified card color."""
+    """Print a string in the specified Magic card color."""
     if cardcolor and cardcolor in _cardcolors:
         cprint(_cardcolors[cardcolor], s)
     else:
@@ -91,13 +93,6 @@ def boldprint(s):
     """Print a string in bold."""
     if global_coloron:
         print(_ansicode['bold'] + s + _ansicode['reset'])
-    else:
-        print(s)
-
-def italicsprint(s):
-    """Print a string in bold."""
-    if global_coloron:
-        print(_ansicode['italics'] + s + _ansicode['reset'])
     else:
         print(s)
 
@@ -151,7 +146,7 @@ def cmd_add(arg, num):
     elif not active_deck:
         print('No active deck.')
         return
-    if active_deck.add(arg, num):
+    if active_deck.deck.add(arg, num):
         cmd_list('', 0)
     else:
         print('Unable to find card data.')
@@ -164,14 +159,14 @@ def cmd_remove(arg, num):
     if not active_deck:
         print('No active deck.')
         return
-    active_deck.remove(arg, num)
+    active_deck.deck.remove(arg, num)
 
 def cmd_stats(arg, num):
     """Print active deck stats."""
     if not active_deck:
         print('No active deck.')
         return
-    print('size: %d' % active_deck.size())
+    print('size: %d' % active_deck.deck.size())
 
 def cmd_list(arg, num):
     """Print active deck list."""
@@ -182,9 +177,9 @@ def cmd_list(arg, num):
     print(sep)
     boldprint(active_deck.name.center(80))
     print(sep)
-    for c in active_deck.manaSorted():
+    for c in active_deck.deck.manaSorted():
         print_deckcardline(c)
-    print(sep + '\nTotal: ' + str(active_deck.size()))
+    print(sep + '\nTotal: ' + str(active_deck.deck.size()))
 
 def cmd_link(arg, num):
     """Print the Gatherer link for a card."""
@@ -222,9 +217,21 @@ def cmd_hand(arg, num):
         print('No active deck.')
         return
     print('')
-    for c in active_deck.randCards(7):
-        print(active_deck.cardData[c].snippet())
+    for c in active_deck.deck.randCards(7):
+        d = active_deck.cardData[c]
+        mprint(d.color(), d.snippet())
     print('')
+
+def cmd_managram(arg, num):
+    """Display the managram."""
+    if not active_deck:
+        print('No active deck.')
+        return
+    m = active_deck.deck.maxConvertedManaCost()
+    print('Cost | Cards')
+    for i in xrange(m + 1):
+        c = active_deck.deck.countConvertedManaFilter(i)
+        print(str(i).rjust(4) + ' | ' + ('=' * c))
 
 def cmd_togglecolor(arg, num):
     """Toggle use of ANSI color escape sequences."""
@@ -244,6 +251,7 @@ cmd_dict = {
     'randhand': cmd_hand,
     'remove': cmd_remove,
     'stats': cmd_stats,
+    'managram': cmd_managram,
     'card': cmd_card,
     'link': cmd_link,
     'list': cmd_list,

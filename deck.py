@@ -9,11 +9,32 @@ def filename(name):
 
 
 class Deck:
-    """A deck of MtG cards."""
+    """A deck of MtG cards.
+    
+    Includes a deck, sideboard, and card data."""
     def __init__(self, name):
         self.name = name
-        self.cards = dict()
+        self.deck = CardPile()
+        self.sideboard = CardPile()
         self.cardData = dict()
+
+    def fetch(self, card):
+        """Fetch card data for a card by name."""
+        card = card.lower()
+        if card in self.cardData:
+            return True
+        data = cards.Card(card)
+        data.load()
+        if not data.loaded:
+            return False
+        self.cardData[card] = data
+        return True
+
+
+class CardPile:
+    """A collection of cards by name."""
+    def __init__(self):
+        self.cards = dict()
 
     def list(self):
         """Return a list of the cards in the deck."""
@@ -56,18 +77,6 @@ class Deck:
         if card in self.cards:
             del self.cards[card]
 
-    def fetch(self, card):
-        """Fetch card data for a card by name."""
-        card = card.lower()
-        if card in self.cardData:
-            return True
-        data = cards.Card(card)
-        data.load()
-        if not data.loaded:
-            return False
-        self.cardData[card] = data
-        return True
-
     def manaSorted(self):
         """Return a list of cards sorted by converted mana cost."""
         return sorted(self.cards.iterkeys(),
@@ -77,3 +86,14 @@ class Deck:
         """Generate a random draw of num cards from the deck."""
         num = min(num, self.size())
         return random.sample(self.list(), num)
+
+    def countConvertedManaFilter(self, cost):
+        """Count the number of cards in the deck with the given mana cost."""
+        return len(filter(lambda c: self.cardData[c].convertedCost == str(cost),
+                   self.list()))
+
+    def maxConvertedManaCost(self):
+        """Get the highest converted mana cost in the deck."""
+        return max(((int(self.cardData[c].convertedCost)
+                     if self.cardData[c].convertedCost is not None else 0)
+                     for c in self.cards))

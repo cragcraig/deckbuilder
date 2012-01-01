@@ -180,7 +180,9 @@ class Card:
         """Return a one line text snippet summarizing card."""
         return str(self.name).ljust(25) +\
                (' (' + ' '.join(self.types) + ') ').ljust(25) +\
-               str(self.cost).ljust(17)
+               str(self.cost if self.cost is not None else '').ljust(17) +\
+               str(self.convertedCost
+                   if self.convertedCost is not None else '').rjust(4)
 
     def color(self):
         """Get the card color."""
