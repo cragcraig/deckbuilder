@@ -24,19 +24,16 @@ def main():
 # Command interpreter.
 def exec_cmd(cmdstr):
     """Interpret a command."""
-    m = re.match('(\w+)\s*(\d*)\s*(.*)', cmdstr)
+    m = re.match('(\w+)\s*(.*)$', cmdstr)
     if not m:
         print('Bad command.')
     else:
         cmd = m.group(1)
-        num = 1
-        if m.group(2) and m.group(2) > 0:
-            num = int(m.group(2))
-        arg = m.group(3)
+        arg = m.group(2)
         if not cmd:
             print('Type a command. Try \'help\'.')
         elif cmd in cmd_dict:
-            cmd_dict[cmd](arg, num)
+            cmd_dict[cmd](arg)
         else:
             print('%s is not a command.' % str(cmd))
     return True
@@ -47,6 +44,15 @@ def prompt_cmd():
     if active_deck:
         s = '[' + active_deck.name + ']'
     return raw_input(s + '# ')
+
+def parse_numarg(arg):
+    """Parse an argument of the form <NUM> <ARG>. Returns (num, arg)."""
+    if not arg:
+        return (None, None)
+    m = re.match('(\d*)\s*(.*)$', arg)
+    if m and m.group(1) and m.group(1) > 0:
+        return (int(m.group(1)), m.group(2))
+    return (None, None)
 
 def print_deckcardline(card):
     """Print a snippet line for a card in the active deck."""
@@ -98,18 +104,18 @@ def boldprint(s):
         print(s)
 
 # Executeable commands.
-def cmd_exit(arg, num):
+def cmd_exit(arg):
     """Exit the program."""
     sys.exit(0)
 
-def cmd_help(arg, num):
+def cmd_help(arg):
     """Print help text."""
     print('Avaliable commands:')
     w = max((len(h) for h in cmd_dict.iterkeys())) + 1
     for cmd in sorted(cmd_dict.keys()):
         print(cmd.ljust(w) + " - " + cmd_dict[cmd].__doc__)
 
-def cmd_deck(arg, num):
+def cmd_deck(arg):
     """Set the active deck."""
     global active_deck
     if not arg:
@@ -123,7 +129,7 @@ def cmd_deck(arg, num):
         active_deck = deck.Deck(arg)
         print('Created new deck \'' + active_deck.name + '\'.')
 
-def cmd_save(arg, num):
+def cmd_save(arg):
     """Save the active deck."""
     if not active_deck:
         print('No active deck.')
@@ -132,7 +138,7 @@ def cmd_save(arg, num):
         pickle.dump(active_deck, f)
     print('Saved deck \'' + active_deck.name + '\'.')
 
-def cmd_deckname(arg, num):
+def cmd_deckname(arg):
     """Change the name of the active deck."""
     if not arg:
         print('usage: deckname <NAME>')
@@ -140,55 +146,59 @@ def cmd_deckname(arg, num):
     active_deck.name = arg
     print('Renamed active deck \'' + active_deck.name + '\'.')
 
-def cmd_add(arg, num):
+def cmd_add(arg):
     """Add a card to the active deck."""
-    if not arg:
+    card, num = parse_numarg(arg)
+    if not card or not num:
         print('usage: add [<NUM>] <CARD>')
         return
     elif not active_deck:
         print('No active deck.')
         return
-    if active_deck.deck.add(arg, num):
-        cmd_list('', 0)
+    if active_deck.deck.add(card, num):
+        cmd_list('')
     else:
         print('Unable to find card data.')
 
-def cmd_addside(arg, num):
+def cmd_addside(arg):
     """Add a card to the active deck's sideboard."""
-    if not arg:
+    card, num = parse_numarg(arg)
+    if not card or not num:
         print('usage: addside [<NUM>] <CARD>')
         return
     elif not active_deck:
         print('No active deck.')
         return
-    if active_deck.sideboard.add(arg, num):
-        cmd_listside('', 0)
+    if active_deck.sideboard.add(card, num):
+        cmd_listside('')
     else:
         print('Unable to find card data.')
 
-def cmd_remove(arg, num):
+def cmd_remove(arg):
     """Remove a card from the active deck."""
-    if not arg:
+    card, num = parse_numarg(arg)
+    if not card or not num:
         print('usage: rm [<NUM>] <CARD>')
         return
     if not active_deck:
         print('No active deck.')
         return
-    active_deck.deck.remove(arg, num)
-    cmd_list('', 0)
+    active_deck.deck.remove(card, num)
+    cmd_list('')
 
-def cmd_removeside(arg, num):
+def cmd_removeside(arg):
     """Remove a card from the active deck's sideboard."""
-    if not arg:
+    card, num = parse_numarg(arg)
+    if not card or not num:
         print('usage: rmside [<NUM>] <CARD>')
         return
     if not active_deck:
         print('No active deck.')
         return
-    active_deck.sideboard.remove(arg, num)
-    cmd_listside('', 0)
+    active_deck.sideboard.remove(card, num)
+    cmd_listside('')
 
-def cmd_stats(arg, num):
+def cmd_stats(arg):
     """Print active deck stats."""
     if not active_deck:
         print('No active deck.')
@@ -196,7 +206,7 @@ def cmd_stats(arg, num):
     print('deck size: %d' % active_deck.deck.size())
     print('sideboard size: %d' % active_deck.sideboard.size())
 
-def cmd_list(arg, num):
+def cmd_list(arg):
     """Print active deck's main deck listing."""
     if not active_deck:
         print('No active deck.')
@@ -209,7 +219,7 @@ def cmd_list(arg, num):
         print_deckcardline(c)
     print('Deck: ' + str(active_deck.deck.size()))
 
-def cmd_listside(arg, num):
+def cmd_listside(arg):
     """Print active deck's sideboad listing."""
     if not active_deck:
         print('No active deck.')
@@ -221,22 +231,22 @@ def cmd_listside(arg, num):
     if active_deck.sideboard.size() == 0:
         print('-empty-'.center(80))
 
-def cmd_listall(arg, num):
+def cmd_listall(arg):
     """Print active deck listing."""
     if not active_deck:
         print('No active deck.')
         return
-    cmd_list('', 0)
-    cmd_listside('', 0)
+    cmd_list('')
+    cmd_listside('')
 
-def cmd_link(arg, num):
+def cmd_link(arg):
     """Print the Gatherer link for a card."""
     if not arg:
         print('usage: link <CARD>')
         return
     print(cards.url(arg))
 
-def cmd_card(arg, num):
+def cmd_card(arg):
     """Display card info from database."""
     if not arg:
         print('usage: card <CARD>')
@@ -259,7 +269,7 @@ def cmd_card(arg, num):
         print('')
         mprint(card.color(), str(card))
 
-def cmd_hand(arg, num):
+def cmd_hand(arg):
     """Generate a random draw hand."""
     if not active_deck:
         print('No active deck.')
@@ -270,7 +280,7 @@ def cmd_hand(arg, num):
         mprint(d.color(), d.snippet())
     print('')
 
-def cmd_managram(arg, num):
+def cmd_managram(arg):
     """Display the managram."""
     if not active_deck:
         print('No active deck.')
@@ -281,7 +291,22 @@ def cmd_managram(arg, num):
         c = active_deck.deck.countConvertedManaFilter(i)
         print(str(i).rjust(4) + ' | ' + ('=' * c))
 
-def cmd_togglecolor(arg, num):
+def cmd_prob(arg):
+    """Probability of drawing a certain selection of cards on a turn."""
+    if not arg or not re.match('\d+(\s*and\s*\d+)*$', arg):
+        print('usage: prob <NUM> [and <NUM> [...]]')
+        return
+    if not active_deck:
+        print('No active deck.')
+        return
+    n = re.split('\s+and\s+', arg)
+    n = [int(i) for i in n]
+    print('Turn | Prob')
+    for i in xrange(16):
+        print(str(i).rjust(3) + '  - ' +
+              str(active_deck.prob_draw(n[0], 7 + i) * 100)[:5].rjust(5) + '%')
+
+def cmd_togglecolor(arg):
     """Toggle use of ANSI color escape sequences."""
     global global_coloron
     global_coloron = not global_coloron
@@ -302,9 +327,10 @@ cmd_dict = {
     'sideboardrm': cmd_removeside,
     'size': cmd_stats,
     'managram': cmd_managram,
+    'prob': cmd_prob,
     'card': cmd_card,
     'link': cmd_link,
-    'ls': cmd_listall,
+    'list': cmd_listall,
     'togglecolor': cmd_togglecolor,
     'exit': cmd_exit}
 

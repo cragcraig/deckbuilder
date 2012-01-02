@@ -1,3 +1,4 @@
+import math
 import random
 
 import cards
@@ -7,6 +8,10 @@ def filename(name):
     """Returns the filename associated with the deck name."""
     return name.replace(' ', '_').lower() + '.deck'
 
+def choose(n, r):
+    """N choose R."""
+    return math.factorial(n) / (math.factorial(r) * math.factorial(n - r))
+    
 
 class Deck:
     """A deck of MtG cards.
@@ -17,6 +22,16 @@ class Deck:
         self.cardData = CardData()
         self.deck = CardPile(self.cardData)
         self.sideboard = CardPile(self.cardData)
+
+    def prob_draw(self, nlist, drawnum):
+        """Probability of drawing a single card out of each group of cards."""
+        decksize = self.deck.size()
+        n = 0
+        for i in xrange(1, min(nlist, drawnum) + 1):
+            n += (choose(drawnum, i) *
+                  choose(decksize - drawnum, nlist - i))
+        return float(n) / float(choose(decksize, nlist))
+
 
 class CardPile:
     """A collection of cards by name."""
