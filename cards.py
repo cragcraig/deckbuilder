@@ -49,6 +49,13 @@ def _scrape_text(soup, title):
     retl = [_replace_scrape_imgs(str(l)) for l in boxes]
     return string.join(retl, sep='\n')
 
+def _scrape_cind(soup, title):
+    """Scrape color indicator."""
+    cind = _scrape(soup, title)
+    if not cind:
+        return None
+    return cind
+
 def _replace_scrape_imgs(s):
     """Replace imgs in a scrape string with the ascii representation."""
     tmp = re.sub('<.*?>', '', re.sub('<img.*?alt="(.*?)".*?>', '|\\1|', s))
@@ -77,15 +84,21 @@ def _alt_to_id(mana):
 # Gatherer scrape alt tags.
 _alt_to_sym = {'Green': '{G}', 'Red': '{R}', 'Black': '{B}', 'Blue': '{U}',
                'White': '{W}', 'Variable Colorless': '{X}', 'Tap': '{T}',
-               'None': 'None'}
+               'None': 'None', 'Phyrexian Green': '{GP}',
+               'Phyrexian Red': '{RP}', 'Phyrexian Black': '{BP}',
+               'Phyrexian Blue': '{UP}', 'Phyrexian White': '{WP}'}
+
 # Gatherer scrape div ids.
 scrapeid_cardstyles = ['', '_ctl05', '_ctl06']
 scrapeid_name = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_nameRow'
 scrapeid_mana = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_manaRow'
+scrapeid_cind =\
+    'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_colorIndicatorRow'
 scrapeid_cmc = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_cmcRow'
 scrapeid_type = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_typeRow'
 scrapeid_text = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_textRow'
-scrapeid_flvr = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_flavorRow'
+scrapeid_flvr =\
+    'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_flavorRow'
 scrapeid_pt = 'ctl00_ctl00_ctl00_MainContent_SubContent_SubContent%s_ptRow'
 
 
@@ -100,11 +113,17 @@ class Card:
         self.flavor = None
         self.power = None
         self.toughness = None
+        self.colorIndicator = None
         self.cardback = None
         self.loaded = False
 
     def load(self, soup=None):
-        """Attempts to scrape card data from gatherer.wizards.com."""
+        """Attempts to scrape card data from gatherer.wizards.com.
+        
+        Reuses the given BeautifulSoup if not None. This is so double-sided
+        cards do not need to request the gather page data twice.
+        """
+        self.loaded = False
         if not soup:
             response = urllib2.urlopen(url(self.name))
             html = response.read()
@@ -133,6 +152,7 @@ class Card:
             self.subtypes = []
         self.text = _scrape_text(soup, scrapeid_text % style)
         self.flavor = _scrape(soup, scrapeid_flvr % style)
+        self.colorIndicator = _scrape_cind(soup, scrapeid_cind % style)
         if self.isCreature():
             self.power, self.toughness = _scrape_pt(soup, scrapeid_pt % style)
         self.loaded = True
@@ -163,6 +183,8 @@ class Card:
         if len(self.subtypes):
             ret += '\n' + 'subtype:'.ljust(10)
         ret += ' '.join(self.subtypes)
+        if self.colorIndicator:
+              ret += '\n' + 'color:'.ljust(10) + str(self.colorIndicator)
         if self.isCreature():
               ret += '\n' + 'P/T:'.ljust(10) + str(self.power) +\
                      ' / ' + str(self.toughness)
@@ -186,9 +208,10 @@ class Card:
 
     def color(self):
         """Get the card color."""
-        if not self.cost:
+        if not self.cost and not self.colorIndicator:
             return None
-        s = re.findall('[RGBWU]', self.cost)
+        cost = self.cost if self.cost else _alt_to_id(self.colorIndicator)
+        s = re.findall('[RGBWU]', cost)
         if not s:
             return None
         return ''.join(sorted(list(set(s))))

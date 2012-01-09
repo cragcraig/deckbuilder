@@ -32,6 +32,16 @@ class Deck:
                   choose(decksize - drawnum, nlist - i))
         return float(n) / float(choose(decksize, nlist))
 
+    def refreshData(self):
+        """Refresh all data from gatherer."""
+        for k in self.cardData.data.iterkeys():
+            c = cards.Card(k)
+            c.load()
+            if c.loaded:
+                self.cardData.data[k] = c
+            else:
+                print('Unable to load data for ' + k + '.')
+
 
 class CardPile:
     """A collection of cards by name."""

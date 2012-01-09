@@ -51,7 +51,7 @@ def parse_numarg(arg):
         return (None, None)
     m = re.match('(\d*)\s*(.*)$', arg)
     if m and m.group(1) and m.group(1) > 0:
-        return (int(m.group(1)), m.group(2))
+        return (m.group(2), int(m.group(1)))
     return (None, None)
 
 def print_deckcardline(card):
@@ -183,6 +183,7 @@ def cmd_remove(arg):
     if not active_deck:
         print('No active deck.')
         return
+    print(str(card) + ': ' + str(num))
     active_deck.deck.remove(card, num)
     cmd_list('')
 
@@ -205,6 +206,14 @@ def cmd_stats(arg):
         return
     print('deck size: %d' % active_deck.deck.size())
     print('sideboard size: %d' % active_deck.sideboard.size())
+
+def cmd_refreshdata(arg):
+    """Refresh all card data from gatherer."""
+    if not active_deck:
+        print('No active deck.')
+        return
+    active_deck.refreshData()
+    print('Done.')
 
 def cmd_list(arg):
     """Print active deck's main deck listing."""
@@ -261,9 +270,9 @@ def cmd_card(arg):
         print('Unable to find card data.')
         return
     if card.cardback:
-        print('\n### FRONT ###')
+        print('\n--- SIDE ONE ---')
         mprint(card.color(), str(card))
-        print('\n### BACK ###')
+        print('\n--- SIDE TWO ---')
         mprint(card.cardback.color(), str(card.cardback))
     else:
         print('')
@@ -332,6 +341,7 @@ cmd_dict = {
     'link': cmd_link,
     'list': cmd_listall,
     'togglecolor': cmd_togglecolor,
+    'refreshdata': cmd_refreshdata,
     'exit': cmd_exit}
 
 if __name__ == "__main__":
