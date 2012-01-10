@@ -46,7 +46,7 @@ def _scrape_cost(soup, manaid):
 def _scrape_pt(soup, ptid):
     """Scrape power / toughness."""
     content = _scrape(soup, ptid)
-    m = re.search('(\d+)\D+(\d+)', content)
+    m = re.search('(.+)\s+.+\s+(.+)', content)
     return (m.group(1), m.group(2))
 
 def _scrape_text(soup, title):
