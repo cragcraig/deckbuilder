@@ -93,6 +93,8 @@ def mprint(cardcolor, s):
     """Print a string in the specified Magic card color."""
     if cardcolor and cardcolor in _cardcolors:
         cprint(_cardcolors[cardcolor], s)
+    elif cardcolor and len(cardcolor) > 1:
+        cprint('yellow', s)
     else:
         print(s)
 

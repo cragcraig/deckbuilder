@@ -2,6 +2,7 @@ import BeautifulSoup
 import re
 import string
 import textwrap
+import unicodedata
 import urllib2
 
 def url(name):
@@ -10,6 +11,14 @@ def url(name):
     return url_prefix + name.replace(' ', '%20')
 
 def _scrape(soup, title):
+    """Scrape a BeautifulSoup for the value div of the div with id=title."""
+    scrape = soup.find('div', id=title)
+    if not scrape:
+        return None
+    value = scrape.find('div', attrs={'class': 'value'})
+    return unicodedata.normalize('NFKD', value.text).encode('ascii', 'ignore')
+
+def _scrape_replaceunicode(soup, title):
     """Scrape a BeautifulSoup for the value div of the div with id=title."""
     scrape = soup.find('div', id=title)
     if not scrape:
@@ -54,7 +63,8 @@ def _scrape_cind(soup, title):
     cind = _scrape(soup, title)
     if not cind:
         return None
-    return cind
+    l = re.findall('\w+', cind)
+    return ''.join(_conv_all_alt(l))
 
 def _replace_scrape_imgs(s):
     """Replace imgs in a scrape string with the ascii representation."""
@@ -144,7 +154,7 @@ class Card:
         self.name = name
         self.cost = _scrape_cost(soup, scrapeid_mana % style)
         self.convertedCost = _scrape(soup, scrapeid_cmc % style)
-        types = _scrape(soup, scrapeid_type % style).split('?')
+        types = _scrape_replaceunicode(soup, scrapeid_type % style).split('?')
         self.types = types[0].split()
         if (len(types) > 1):
             self.subtypes = types[1].split()
@@ -195,22 +205,22 @@ class Card:
         if self.flavor:
             ret += '\n'
             for l in string.split(str(self.flavor), '\n'):
-                ret += '\n"' + textwrap.fill(l, 50).replace('?', '\n-') + '"'
+                ret += '\n"' + textwrap.fill(l, 50) + '"'
         return ret
 
     def snippet(self):
         """Return a one line text snippet summarizing card."""
         return str(self.name).ljust(25) +\
-               (' (' + ' '.join(self.types) + ') ').ljust(25) +\
+               ('   ' + ' '.join(self.types)).ljust(25) +\
                str(self.cost if self.cost is not None else '').ljust(17) +\
-               str(self.convertedCost
-                   if self.convertedCost is not None else '').rjust(4)
+               str(str(self.power) + ' / ' + str(self.toughness)\
+                   if self.isCreature() else '').rjust(4)
 
     def color(self):
         """Get the card color."""
         if not self.cost and not self.colorIndicator:
             return None
-        cost = self.cost if self.cost else _alt_to_id(self.colorIndicator)
+        cost = self.cost if self.cost else self.colorIndicator
         s = re.findall('[RGBWU]', cost)
         if not s:
             return None
