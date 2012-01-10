@@ -16,7 +16,7 @@ def _scrape(soup, title):
     if not scrape:
         return None
     value = scrape.find('div', attrs={'class': 'value'})
-    return unicodedata.normalize('NFKD', value.text).encode('ascii', 'ignore')
+    return unicodedata.normalize('NFKD', value.text).encode('ascii', 'xmlcharrefreplace').replace('&#8212;', ' -- ')
 
 def _scrape_replaceunicode(soup, title):
     """Scrape a BeautifulSoup for the value div of the div with id=title."""
