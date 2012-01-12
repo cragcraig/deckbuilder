@@ -48,14 +48,14 @@ class Deck:
     def _recurseprob(self, nlist, drawn, undrawn, handsize):
         decksize = self.deck.size()
         c = 0
-        for n in xrange(1, nlist[0] + 1):
+        for n in xrange(nlist[0][0], nlist[0][1] + 1):
             if n > handsize - drawn or\
-               nlist[0] - n > decksize - handsize - undrawn:
+               nlist[0][1] - n > decksize - handsize - undrawn:
                 continue
             c += (choose(handsize - drawn, n) *
-                  choose(decksize - handsize - undrawn, nlist[0] - n)) *\
+                  choose(decksize - handsize - undrawn, nlist[0][1] - n)) *\
                   (self._recurseprob(nlist[1:], drawn + n,
-                                     undrawn + nlist[0] - n,
+                                     undrawn + nlist[0][1] - n,
                                      handsize)
                    if len(nlist) > 1 else 1)
         return c
@@ -65,11 +65,12 @@ class Deck:
         c = 1
         u = 0
         for n in nlist:
-            c *= choose(decksize - u, n)
-            u += n
+            c *= choose(decksize - u, n[1])
+            u += n[1]
         return c
 
     def prob_anddraw(self, nlist, handsize):
+        """Probability of drawing at least one of each specific card in list."""
         n = self._recurseprob(nlist, 0, 0, handsize)
         d = self._totalways(nlist)
         return float(n) / float(d)

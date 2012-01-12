@@ -8,6 +8,15 @@ import cPickle as pickle
 import cards
 import deck
 
+class ImproperArgException(Exception):
+    pass
+
+class UsageException(Exception):
+    pass
+
+class MissingDeckException(Exception):
+    pass
+
 def main():
     """Prompt and execute commands."""
     print('MtG Deck Builder')
@@ -33,9 +42,16 @@ def exec_cmd(cmdstr):
         if not cmd:
             print('Type a command. Try \'help\'.')
         elif cmd in cmd_dict:
-            cmd_dict[cmd](arg)
+            try:
+                cmd_dict[cmd](arg)
+            except ImproperArgException, e:
+                print(str(e))
+            except UsageException, e:
+                print('usage: ' + cmd + ' ' + str(e))
+            except MissingDeckException:
+                print('No active deck.')
         else:
-            print('%s is not a command.' % str(cmd))
+            print('%s is not a command. Try \'help\'.' % str(cmd))
     return True
 
 def prompt_cmd():
@@ -52,13 +68,18 @@ def parse_numarg(arg):
     m = re.match('(\d*)\s*(.*)$', arg)
     if m and m.group(1) and m.group(1) > 0:
         return (m.group(2), int(m.group(1)))
-    return (None, None)
+    raise ImproperArgException('Argument should be of the form <NUM> <ARG>.')
 
 def print_deckcardline(card):
     """Print a snippet line for a card in the active deck."""
     print(str(active_deck.deck.cards[card]).rjust(3) + ' | ', end='')
     mprint(active_deck.cardData.data[card].color(),
            active_deck.cardData.data[card].snippet())
+
+def assert_activedeck():
+    """Raise a MissingDeckException if there is not an active deck."""
+    if not active_deck:
+        raise MissingDeckException
 
 _ansicode = {
     'black': '\x1b[30m',
@@ -85,6 +106,7 @@ _cardcolors = {
 def cprint(color, s):
     """Print a string in color."""
     if global_coloron:
+        assert color in _ansicode
         print(_ansicode['bold'] + _ansicode[color] + s + _ansicode['reset'])
     else:
         print(s)
@@ -121,8 +143,7 @@ def cmd_deck(arg):
     """Set the active deck."""
     global active_deck
     if not arg:
-        print('usage: deck <NAME>')
-        return
+        raise UsageException('<NAME>')
     try:
         with open(deck.filename(arg), "rb") as f:
             active_deck = pickle.load(f)
@@ -133,9 +154,7 @@ def cmd_deck(arg):
 
 def cmd_save(arg):
     """Save the active deck."""
-    if not active_deck:
-        print('No active deck.')
-        return
+    assert_activedeck()
     with open(deck.filename(active_deck.name), "wb") as f:
         pickle.dump(active_deck, f)
     print('Saved deck \'' + active_deck.name + '\'.')
@@ -143,8 +162,7 @@ def cmd_save(arg):
 def cmd_deckname(arg):
     """Change the name of the active deck."""
     if not arg:
-        print('usage: deckname <NAME>')
-        return
+        raise UsageException('<NAME>')
     active_deck.name = arg
     print('Renamed active deck \'' + active_deck.name + '\'.')
 
@@ -152,11 +170,8 @@ def cmd_add(arg):
     """Add a card to the active deck."""
     card, num = parse_numarg(arg)
     if not card or not num:
-        print('usage: add [<NUM>] <CARD>')
-        return
-    elif not active_deck:
-        print('No active deck.')
-        return
+        raise UsageException('[<NUM>] <CARD>')
+    assert_activedeck()
     if active_deck.deck.add(card, num):
         cmd_list('')
     else:
@@ -166,11 +181,8 @@ def cmd_addside(arg):
     """Add a card to the active deck's sideboard."""
     card, num = parse_numarg(arg)
     if not card or not num:
-        print('usage: addside [<NUM>] <CARD>')
-        return
-    elif not active_deck:
-        print('No active deck.')
-        return
+        raise UsageException('[<NUM>] <CARD>')
+    assert_activedeck()
     if active_deck.sideboard.add(card, num):
         cmd_listside('')
     else:
@@ -180,12 +192,10 @@ def cmd_remove(arg):
     """Remove a card from the active deck."""
     card, num = parse_numarg(arg)
     if not card or not num:
-        print('usage: rm [<NUM>] <CARD>')
-        return
-    if not active_deck:
-        print('No active deck.')
-        return
-    print(str(card) + ': ' + str(num))
+        raise UsageException('[<NUM>] <CARD>')
+    assert_activedeck()
+    if card.lower() not in active_deck.deck.cards:
+        raise ImproperArgException('Card is not in active deck.')
     active_deck.deck.remove(card, num)
     cmd_list('')
 
@@ -193,35 +203,28 @@ def cmd_removeside(arg):
     """Remove a card from the active deck's sideboard."""
     card, num = parse_numarg(arg)
     if not card or not num:
-        print('usage: rmside [<NUM>] <CARD>')
-        return
-    if not active_deck:
-        print('No active deck.')
-        return
+        raise UsageException('[<NUM>] <CARD>')
+    assert_activedeck()
+    if card.lower() not in active_deck.sideboard.cards:
+        raise ImproperArgException('Card is not in active deck\'s sideboard.')
     active_deck.sideboard.remove(card, num)
     cmd_listside('')
 
 def cmd_stats(arg):
     """Print active deck stats."""
-    if not active_deck:
-        print('No active deck.')
-        return
+    assert_activedeck()
     print('deck size: %d' % active_deck.deck.size())
     print('sideboard size: %d' % active_deck.sideboard.size())
 
 def cmd_refreshdata(arg):
     """Refresh all card data from gatherer."""
-    if not active_deck:
-        print('No active deck.')
-        return
+    assert_activedeck()
     active_deck.refreshData()
     print('Done.')
 
 def cmd_list(arg):
     """Print active deck's main deck listing."""
-    if not active_deck:
-        print('No active deck.')
-        return
+    assert_activedeck()
     sep = '-' * 80
     print(sep)
     boldprint(active_deck.name.center(80))
@@ -232,9 +235,7 @@ def cmd_list(arg):
 
 def cmd_listside(arg):
     """Print active deck's sideboad listing."""
-    if not active_deck:
-        print('No active deck.')
-        return
+    assert_activedeck()
     sep = '-' * 80
     print(string.center(' Sideboard ', 80, '-'))
     for c in active_deck.sideboard.manaSorted():
@@ -244,24 +245,20 @@ def cmd_listside(arg):
 
 def cmd_listall(arg):
     """Print active deck listing."""
-    if not active_deck:
-        print('No active deck.')
-        return
+    assert_activedeck()
     cmd_list('')
     cmd_listside('')
 
 def cmd_link(arg):
     """Print the Gatherer link for a card."""
     if not arg:
-        print('usage: link <CARD>')
-        return
+        raise UsageException('<CARD>')
     print(cards.url(arg))
 
 def cmd_card(arg):
     """Display card info from database."""
     if not arg:
-        print('usage: card <CARD>')
-        return
+        raise UsageException('<CARD>')
     # Use preloaded data if already in active deck, otherwise fetch.
     if active_deck and arg.lower() in active_deck.cardData.data:
         card = active_deck.cardData.data[arg.lower()]
@@ -282,9 +279,7 @@ def cmd_card(arg):
 
 def cmd_hand(arg):
     """Generate a random draw hand."""
-    if not active_deck:
-        print('No active deck.')
-        return
+    assert_activedeck()
     print('')
     for c in active_deck.deck.randCards(7):
         d = active_deck.cardData.data[c]
@@ -293,9 +288,7 @@ def cmd_hand(arg):
 
 def cmd_managram(arg):
     """Display the managram."""
-    if not active_deck:
-        print('No active deck.')
-        return
+    assert_activedeck()
     m = active_deck.deck.maxConvertedManaCost()
     print('Cost | Cards')
     for i in xrange(m + 1):
@@ -305,23 +298,36 @@ def cmd_managram(arg):
 def cmd_prob(arg):
     """Probability of drawing a certain selection of cards by a turn."""
     if not arg or not re.match('.*?(\s+and\s+.*?)*$', arg):
-        print('usage: prob <CARD> [and <CARD> [...]]')
-        return
-    if not active_deck:
-        print('No active deck.')
-        return
-    clist = re.split('\s+and\s+', arg)
-    if any((c.lower() not in active_deck.deck.cards for c in clist)):
-        print('Cards are not in active deck.')
-        return
-    nlist = [active_deck.deck.cards[c.lower()] for c in clist]
+        raise UsageException('<NUM> <CARD> [or <CARD> [or ...]] [and <NUM> '
+                             '<CARD> [or <CARD> [or ...]] [and ...]]')
+    assert_activedeck()
+    nlist = parse_andlist(arg)
+    print(str(nlist))
     # Print actual probabilities.
-    cprint('bold', '\nTurn | Probability')
-    print('-----|------------')
+    cprint('bold', '\n Turn   Cards   Probability')
+    print('------|-------|-------------')
     for i in xrange(16):
-        print(str(i).rjust(3) + '  -  ' +
-              str(active_deck.prob_anddraw(nlist, 7 + i) * 100)[:5].rjust(5) +
+        print(str(i).rjust(4) + str(7 + i).rjust(8) +
+              str(active_deck.prob_anddraw(nlist, 7 + i) * 100)[:5].rjust(12) +
                   '%')
+
+def parse_andlist(arg):
+    """Parse a list of draw AND requirements."""
+    return [parse_orlist(s) for s in re.split('\s+and\s+', arg)]
+
+def parse_orlist(arg):
+    """Parse a list of card OR tuples."""
+    assert_activedeck()
+    d = 1
+    m = re.match('(\d+)\s+(.*$)', arg)
+    if m:
+        d = int(m.group(1))
+        arg = m.group(2)
+    orlist = re.split('\s+or\s+', arg)
+    if any((c.lower() not in active_deck.deck.cards for c in orlist)):
+        raise ImproperArgException('Cards are not in active deck.')
+    s = sum((active_deck.deck.cards[c.lower()] for c in orlist))
+    return (d, s)
 
 def cmd_togglecolor(arg):
     """Toggle use of ANSI color escape sequences."""
