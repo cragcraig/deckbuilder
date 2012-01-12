@@ -183,6 +183,15 @@ class Card:
         """Return True if card is of type Creature."""
         return 'Creature' in self.types
 
+    def hasType(self, t):
+        """Return True if card has Type t as a major or subtype."""
+        tc = t.capitalize()
+        return tc in self.types or tc in self.subtypes
+
+    def hasTypes(self, tlist):
+        """Return True if card has all Types in t as a major or subtype."""
+        return not any((not self.hasType(t) for t in tlist))
+
     def __str__(self):
         ret = str(self.name) + '\n' +\
               'cost: '.ljust(10) + str(self.cost) +\

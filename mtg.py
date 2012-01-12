@@ -70,11 +70,18 @@ def parse_numarg(arg):
         return (m.group(2), int(m.group(1)))
     raise ImproperArgException('Argument should be of the form <NUM> <ARG>.')
 
-def print_deckcardline(card):
-    """Print a snippet line for a card in the active deck."""
-    print(str(active_deck.deck.cards[card]).rjust(3) + ' | ', end='')
-    mprint(active_deck.cardData.data[card].color(),
-           active_deck.cardData.data[card].snippet())
+def print_deckcardline(count, card, reqType=None):
+    """Print a snippet line for a card in the active deck.
+    
+    If reqType is not none, skips printing the line if card does not have the
+    specified Type.
+    """
+    if reqType and not card.hasTypes(reqType.split()):
+        return False
+    print(str(count).rjust(3) + ' | ', end='')
+    mprint(card.color(),
+           card.snippet())
+    return True
 
 def assert_activedeck():
     """Raise a MissingDeckException if there is not an active deck."""
@@ -134,7 +141,7 @@ def cmd_exit(arg):
 
 def cmd_help(arg):
     """Print help text."""
-    print('Avaliable commands:')
+    cprint('bold', '\nAvaliable commands:')
     w = max((len(h) for h in cmd_dict.iterkeys())) + 1
     for cmd in sorted(cmd_dict.keys()):
         print(cmd.ljust(w) + " - " + cmd_dict[cmd].__doc__)
@@ -211,10 +218,12 @@ def cmd_removeside(arg):
     cmd_listside('')
 
 def cmd_stats(arg):
-    """Print active deck stats."""
+    """Print active deck and sideboard size."""
     assert_activedeck()
     print('deck size: %d' % active_deck.deck.size())
     print('sideboard size: %d' % active_deck.sideboard.size())
+    print('total size: %d' %
+          (active_deck.deck.size() + active_deck.sideboard.size()))
 
 def cmd_refreshdata(arg):
     """Refresh all card data from gatherer."""
@@ -223,31 +232,37 @@ def cmd_refreshdata(arg):
     print('Done.')
 
 def cmd_list(arg):
-    """Print active deck's main deck listing."""
+    """Print active deck's deck listing. Show only cards with Type <ARG>."""
     assert_activedeck()
     sep = '-' * 80
     print(sep)
     boldprint(active_deck.name.center(80))
     print(sep)
+    ip = 0
     for c in active_deck.deck.manaSorted():
-        print_deckcardline(c)
-    print('Deck: ' + str(active_deck.deck.size()))
+        if print_deckcardline(active_deck.deck.cards[c],
+                              active_deck.cardData.data[c], reqType=arg):
+            ip += active_deck.deck.cards[c]
+    print('Total: ' + str(ip))
 
 def cmd_listside(arg):
-    """Print active deck's sideboad listing."""
+    """Print active deck's sideboad listing. Show only cards with Type <ARG>."""
     assert_activedeck()
     sep = '-' * 80
     print(string.center(' Sideboard ', 80, '-'))
+    ip = 0
     for c in active_deck.sideboard.manaSorted():
-        print_deckcardline(c)
-    if active_deck.sideboard.size() == 0:
-        print('-empty-'.center(80))
+        if print_deckcardline(active_deck.sideboard.cards[c],
+                              active_deck.cardData.data[c], reqType=arg):
+            ip += 1
+    if ip == 0:
+        print('-nothing-'.center(80))
 
 def cmd_listall(arg):
     """Print active deck listing."""
     assert_activedeck()
-    cmd_list('')
-    cmd_listside('')
+    cmd_list(arg)
+    cmd_listside(arg)
 
 def cmd_link(arg):
     """Print the Gatherer link for a card."""
@@ -256,7 +271,7 @@ def cmd_link(arg):
     print(cards.url(arg))
 
 def cmd_card(arg):
-    """Display card info from database."""
+    """Display card info from an online database."""
     if not arg:
         raise UsageException('<CARD>')
     # Use preloaded data if already in active deck, otherwise fetch.
@@ -290,10 +305,11 @@ def cmd_managram(arg):
     """Display the managram."""
     assert_activedeck()
     m = active_deck.deck.maxConvertedManaCost()
-    print('Cost | Cards')
+    cprint('bold', '\n Cost   Cards')
+    print('------|-------')
     for i in xrange(m + 1):
         c = active_deck.deck.countConvertedManaFilter(i)
-        print(str(i).rjust(4) + ' | ' + ('=' * c))
+        print(str(i).rjust(4) + str(c).rjust(8) + '  ' + ('=' * c))
 
 def cmd_prob(arg):
     """Probability of drawing a certain selection of cards by a turn."""
@@ -302,7 +318,6 @@ def cmd_prob(arg):
                              '<CARD> [or <CARD> [or ...]] [and ...]]')
     assert_activedeck()
     nlist = parse_andlist(arg)
-    print(str(nlist))
     # Print actual probabilities.
     cprint('bold', '\n Turn   Cards   Probability')
     print('------|-------|-------------')
