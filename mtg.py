@@ -259,7 +259,7 @@ def cmd_listside(arg):
         print('-nothing-'.center(80))
 
 def cmd_listall(arg):
-    """Print active deck listing."""
+    """Print active deck listing, optionally filtered by the card Type."""
     assert_activedeck()
     cmd_list(arg)
     cmd_listside(arg)
@@ -312,7 +312,7 @@ def cmd_managram(arg):
         print(str(i).rjust(4) + str(c).rjust(8) + '  ' + ('=' * c))
 
 def cmd_prob(arg):
-    """Probability of drawing a certain selection of cards by a turn."""
+    """Probability of drawing a certain selection of cards."""
     if not arg or not re.match('.*?(\s+and\s+.*?)*$', arg):
         raise UsageException('<NUM> <CARD> [or <CARD> [or ...]] [and <NUM> '
                              '<CARD> [or <CARD> [or ...]] [and ...]]')
@@ -328,9 +328,13 @@ def cmd_prob(arg):
 
 def parse_andlist(arg):
     """Parse a list of draw AND requirements."""
-    return [parse_orlist(s) for s in re.split('\s+and\s+', arg)]
+    cl = []
+    l = [parse_orlist(s, cl) for s in re.split('\s+and\s+', arg)]
+    if len(cl) != len(set(cl)):
+        raise ImproperArgException('Each card may appear only once.')
+    return l
 
-def parse_orlist(arg):
+def parse_orlist(arg, cardlist=None):
     """Parse a list of card OR tuples."""
     assert_activedeck()
     d = 1
@@ -339,9 +343,12 @@ def parse_orlist(arg):
         d = int(m.group(1))
         arg = m.group(2)
     orlist = re.split('\s+or\s+', arg)
-    if any((c.lower() not in active_deck.deck.cards for c in orlist)):
+    orlist = [c.lower() for c in orlist]
+    if any((c not in active_deck.deck.cards for c in orlist)):
         raise ImproperArgException('Cards are not in active deck.')
-    s = sum((active_deck.deck.cards[c.lower()] for c in orlist))
+    s = sum((active_deck.deck.cards[c] for c in orlist))
+    if cardlist is not None:
+        cardlist.extend(orlist)
     return (d, s)
 
 def cmd_togglecolor(arg):
