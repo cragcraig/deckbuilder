@@ -303,19 +303,25 @@ def cmd_managram(arg):
         print(str(i).rjust(4) + ' | ' + ('=' * c))
 
 def cmd_prob(arg):
-    """Probability of drawing a certain selection of cards on a turn."""
-    if not arg or not re.match('\d+(\s*and\s*\d+)*$', arg):
-        print('usage: prob <NUM> [and <NUM> [...]]')
+    """Probability of drawing a certain selection of cards by a turn."""
+    if not arg or not re.match('.*?(\s+and\s+.*?)*$', arg):
+        print('usage: prob <CARD> [and <CARD> [...]]')
         return
     if not active_deck:
         print('No active deck.')
         return
-    n = re.split('\s+and\s+', arg)
-    n = [int(i) for i in n]
-    print('Turn | Prob')
+    clist = re.split('\s+and\s+', arg)
+    if any((c.lower() not in active_deck.deck.cards for c in clist)):
+        print('Cards are not in active deck.')
+        return
+    nlist = [active_deck.deck.cards[c.lower()] for c in clist]
+    # Print actual probabilities.
+    cprint('bold', '\nTurn | Probability')
+    print('-----|------------')
     for i in xrange(16):
-        print(str(i).rjust(3) + '  - ' +
-              str(active_deck.prob_draw(n[0], 7 + i) * 100)[:5].rjust(5) + '%')
+        print(str(i).rjust(3) + '  -  ' +
+              str(active_deck.prob_anddraw(nlist, 7 + i) * 100)[:5].rjust(5) +
+                  '%')
 
 def cmd_togglecolor(arg):
     """Toggle use of ANSI color escape sequences."""

@@ -35,7 +35,7 @@ def _scrape_raw(soup, title):
     return value
 
 def _scrape_cost(soup, manaid):
-    """Scrapte mana cost as a list."""
+    """Scrape mana cost as a list."""
     value = _scrape_raw(soup, manaid)
     if not value:
         return None

@@ -11,7 +11,7 @@ def filename(name):
 def choose(n, r):
     """N choose R."""
     return math.factorial(n) / (math.factorial(r) * math.factorial(n - r))
-    
+
 
 class Deck:
     """A deck of MtG cards.
@@ -23,14 +23,56 @@ class Deck:
         self.deck = CardPile(self.cardData)
         self.sideboard = CardPile(self.cardData)
 
-    def prob_draw(self, nlist, drawnum):
-        """Probability of drawing a single card out of each group of cards."""
+    def prob_draw(self, z, n, handsize):
+        """Probability of drawing >= z of a specific card with n copies."""
         decksize = self.deck.size()
-        n = 0
-        for i in xrange(1, min(nlist, drawnum) + 1):
-            n += (choose(drawnum, i) *
-                  choose(decksize - drawnum, nlist - i))
-        return float(n) / float(choose(decksize, nlist))
+        # Sanity check.
+        if z > min(n, handsize) or max(z, n, handsize) > decksize:
+            return 0.
+        # Compute prob.
+        c = 0
+        for i in xrange(z, min(n, handsize) + 1):
+            c += choose(handsize, i) * choose(decksize - handsize, n - i)
+        return float(c) / float(choose(decksize, n))
+
+    def prob_notdraw(self, n, handsize):
+        """Probability of not drawing any of a specific card with n copies."""
+        decksize = self.deck.size()
+        return float(choose(decksize - handsize, n)) / float(choose(decksize, n))
+
+    def prob_countways(self, n, handsize):
+        """Return number of ways to draw at least one of n cards in a hand."""
+        decksize = self.deck.size()
+        return choose(decksize, n) - choose(decksize - handsize, n)
+
+    def _recurseprob(self, nlist, drawn, undrawn, handsize):
+        decksize = self.deck.size()
+        c = 0
+        for n in xrange(1, nlist[0] + 1):
+            if n > handsize - drawn or\
+               nlist[0] - n > decksize - handsize - undrawn:
+                continue
+            c += (choose(handsize - drawn, n) *
+                  choose(decksize - handsize - undrawn, nlist[0] - n)) *\
+                  (self._recurseprob(nlist[1:], drawn + n,
+                                     undrawn + nlist[0] - n,
+                                     handsize)
+                   if len(nlist) > 1 else 1)
+        return c
+
+    def _totalways(self, nlist):
+        decksize = self.deck.size()
+        c = 1
+        u = 0
+        for n in nlist:
+            c *= choose(decksize - u, n)
+            u += n
+        return c
+
+    def prob_anddraw(self, nlist, handsize):
+        n = self._recurseprob(nlist, 0, 0, handsize)
+        d = self._totalways(nlist)
+        return float(n) / float(d)
 
     def refreshData(self):
         """Refresh all data from gatherer."""
