@@ -228,7 +228,7 @@ class Card:
                str(str(self.power) + ' / ' + str(self.toughness)\
                    if self.isCreature() else '').rjust(4)
 
-    def summary(self, n=60):
+    def summary(self, n=70):
         """Return a summary in one line and a max of n characters."""
         if not self.text:
             return None

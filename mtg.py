@@ -8,6 +8,7 @@ import cPickle as pickle
 import cards
 import deck
 
+# Custom exceptions
 class ImproperArgException(Exception):
     pass
 
@@ -17,6 +18,7 @@ class UsageException(Exception):
 class MissingDeckException(Exception):
     pass
 
+# Main routine
 def main():
     """Prompt and execute commands."""
     print('MtG Deck Builder')
@@ -50,16 +52,26 @@ def exec_cmd(cmdstr):
                 print('usage: ' + cmd + ' ' + str(e))
             except MissingDeckException:
                 print('No active deck.')
+            readline.add_history(cmdstr)
         else:
             print('%s is not a command. Try \'help\'.' % str(cmd))
     return True
 
-def prompt_cmd():
-    """Print command prompt for the current state."""
+def get_prompt():
     s = ''
     if active_deck:
         s = '[' + active_deck.name + ']'
-    return raw_input(s + '# ')
+    return s + '# '
+
+def prompt_cmd():
+    """Print command prompt for the current state."""
+    try:
+        return raw_input(get_prompt()).strip()
+    except EOFError:
+        cmd_exit('')
+    except KeyboardInterrupt:
+        cmd_exit('')
+    return ''
 
 def parse_numarg(arg):
     """Parse an argument of the form <NUM> <ARG>. Returns (num, arg)."""
@@ -169,8 +181,9 @@ def cmd_save(arg):
 
 def cmd_deckname(arg):
     """Change the name of the active deck."""
-    if not arg:
+    if not arg or len(arg) == 0:
         raise UsageException('<NAME>')
+    assert_activedeck()
     active_deck.name = arg
     print('Renamed active deck \'' + active_deck.name + '\'.')
 
@@ -257,8 +270,10 @@ def cmd_list(arg, summarize=False):
         card = active_deck.cardData.data[c]
         if print_deckcardline(active_deck.deck.cards[c], card,
                               reqType=arg):
-            if summarize and card.summary():
-                print('       ' + card.summary() + '\n')
+            if summarize:
+                if card.summary():
+                    print('       ' + card.summary())
+                print('')
             ip += active_deck.deck.cards[c]
     print('Total: ' + str(ip))
 
@@ -272,8 +287,10 @@ def cmd_listside(arg, summarize=False):
         card = active_deck.cardData.data[c]
         if print_deckcardline(active_deck.sideboard.cards[c], card,
                               reqType=arg):
-            if summarize and card.summary():
-                print('       ' + card.summary() + '\n')
+            if summarize:
+                if card.summary():
+                    print('       ' + card.summary())
+                print('')
             ip += 1
     if ip == 0:
         print('-nothing-'.center(80))
@@ -285,12 +302,12 @@ def cmd_listall(arg):
     cmd_listside(arg)
 
 def cmd_summary(arg):
-    """Print a summary of cards in the deck, optionally filtered by Type."""
+    """Print a summary of cards in the deck, filtered by Type."""
     assert_activedeck()
     cmd_list(arg, summarize=True)
 
 def cmd_sidesummary(arg):
-    """Print a summary of sideboarded cards, optionally filtered by Type."""
+    """Print a summary of sideboarded cards, filtered by Type."""
     assert_activedeck()
     cmd_listside(arg, summarize=True)
 
@@ -343,9 +360,9 @@ def cmd_managram(arg):
 
 def cmd_prob(arg):
     """Probability of drawing a certain selection of cards."""
-    if not arg or not re.match('.*?(\s+and\s+.*?)*$', arg):
-        raise UsageException('<NUM> <CARD> [or <CARD> [or ...]] [and <NUM> '
-                             '<CARD> [or <CARD> [or ...]] [and ...]]')
+    if not arg:
+        raise UsageException('<NUM> <CARD> [OR <CARD> [OR ...]] [AND <NUM> '
+                             '<CARD> [OR <CARD> [OR ...]] [AND ...]]')
     assert_activedeck()
     nlist = parse_andlist(arg)
     # Print actual probabilities.
@@ -359,7 +376,7 @@ def cmd_prob(arg):
 def parse_andlist(arg):
     """Parse a list of draw AND requirements."""
     cl = []
-    l = [parse_orlist(s, cl) for s in re.split('\s+and\s+', arg)]
+    l = [parse_orlist(s, cl) for s in re.split('\s+AND\s+', arg)]
     if len(cl) != len(set(cl)):
         raise ImproperArgException('Each card may appear only once.')
     return l
@@ -372,7 +389,7 @@ def parse_orlist(arg, cardlist=None):
     if m:
         d = int(m.group(1))
         arg = m.group(2)
-    orlist = re.split('\s+or\s+', arg)
+    orlist = re.split('\s+OR\s+', arg)
     orlist = [c.lower() for c in orlist]
     if any((c not in active_deck.deck.cards for c in orlist)):
         raise ImproperArgException('Cards are not in active deck.')
@@ -398,9 +415,9 @@ cmd_dict = {
     'randhand': cmd_hand,
     'add': cmd_add,
     'rm': cmd_remove,
-    'sideboard': cmd_side,
-    'sideboardadd': cmd_addside,
-    'sideboardrm': cmd_removeside,
+    'side': cmd_side,
+    'sideadd': cmd_addside,
+    'siderm': cmd_removeside,
     'size': cmd_stats,
     'managram': cmd_managram,
     'prob': cmd_prob,
@@ -412,6 +429,58 @@ cmd_dict = {
     'togglecolor': cmd_togglecolor,
     'refreshdata': cmd_refreshdata,
     'exit': cmd_exit}
+
+
+# Readline
+_readline_regexp = '(.+(?:AND|OR|\d+)\s+|\w+\s+)(.+)$'
+
+def readline_completer(text, state):
+    """The GNU readline completer function."""
+    l = []
+    if not re.search('\s', text):
+        l = filter(lambda k: re.match(text, k), cmd_dict.iterkeys())
+    elif active_deck:
+        m = re.match(_readline_regexp, text)
+        if m:
+            cards = active_deck.cardData.cardNames()
+            l = [m.group(1) + c for c in
+                 filter(lambda k: re.match(m.group(2), k), cards)]
+    if state < len(l):
+        return l[state]
+    return  None
+
+def readline_printmatches(substitution, matches, longest_match_length):
+    """Print multiple readline matches."""
+    print('')
+    m = re.match(_readline_regexp, substitution)
+    printmatches = []
+    for mtext in matches:
+        s = mtext
+        if m:
+            k = re.match(_readline_regexp, mtext)
+            s = k.group(2)
+        printmatches.append(s)
+    # Print matches.
+    spacing = max((len(s) for s in printmatches))
+    for s in printmatches:
+        print(s.ljust(spacing), end=' ')
+    print('\n' + get_prompt() + substitution, end='')
+
+def readline_init():
+    """Initialize readline."""
+    readline.set_completer_delims('')
+    readline.parse_and_bind('tab: complete')
+    readline.set_completer(readline_completer)
+    readline.set_completion_display_matches_hook(readline_printmatches)
+
+# Import readline, if avaliable
+try:
+    import readline
+except ImportError:
+    pass
+else:
+    readline_init()
+
 
 if __name__ == "__main__":
     main()

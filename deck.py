@@ -174,3 +174,9 @@ class CardData:
             return False
         self.data[card] = data
         return True
+
+    def cardNames(self):
+        """List of all card names, both lowercase and original versions."""
+        l = [c.name for c in self.data.itervalues()]
+        l.extend(self.data.keys())
+        return list(set(l))
