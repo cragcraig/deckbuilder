@@ -228,6 +228,15 @@ class Card:
                str(str(self.power) + ' / ' + str(self.toughness)\
                    if self.isCreature() else '').rjust(4)
 
+    def summary(self, n=60):
+        """Return a summary in one line and a max of n characters."""
+        if not self.text:
+            return None
+        s = self.text.replace('\n', '   ')
+        if len(s) > n:
+            s = s[:n - 3] + "..."
+        return s
+
     def color(self):
         """Get the card color."""
         if not self.cost and not self.colorIndicator:

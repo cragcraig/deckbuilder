@@ -78,7 +78,7 @@ def print_deckcardline(count, card, reqType=None):
     """
     if reqType and not card.hasTypes(reqType.split()):
         return False
-    print(str(count).rjust(3) + ' | ', end='')
+    print(str(count).rjust(3) + '   ', end='')
     mprint(card.color(),
            card.snippet())
     return True
@@ -110,20 +110,21 @@ _cardcolors = {
     'W': 'white',
     'U': 'blue'}
 
-def cprint(color, s):
+def cprint(color, s, bold=True):
     """Print a string in color."""
     if global_coloron:
         assert color in _ansicode
-        print(_ansicode['bold'] + _ansicode[color] + s + _ansicode['reset'])
+        print((_ansicode['bold'] if bold else '') +
+              _ansicode[color] + s + _ansicode['reset'])
     else:
         print(s)
 
-def mprint(cardcolor, s):
+def mprint(cardcolor, s, bold=True):
     """Print a string in the specified Magic card color."""
     if cardcolor and cardcolor in _cardcolors:
-        cprint(_cardcolors[cardcolor], s)
+        cprint(_cardcolors[cardcolor], s, bold=bold)
     elif cardcolor and len(cardcolor) > 1:
-        cprint('yellow', s)
+        cprint('yellow', s, bold=bold)
     else:
         print(s)
 
@@ -244,7 +245,7 @@ def cmd_refreshdata(arg):
     active_deck.refreshData()
     print('Done.')
 
-def cmd_list(arg):
+def cmd_list(arg, summarize=False):
     """Print active deck's deck listing. Show only cards with Type <ARG>."""
     assert_activedeck()
     sep = '-' * 80
@@ -253,20 +254,26 @@ def cmd_list(arg):
     print(sep)
     ip = 0
     for c in active_deck.deck.manaSorted():
-        if print_deckcardline(active_deck.deck.cards[c],
-                              active_deck.cardData.data[c], reqType=arg):
+        card = active_deck.cardData.data[c]
+        if print_deckcardline(active_deck.deck.cards[c], card,
+                              reqType=arg):
+            if summarize and card.summary():
+                print('       ' + card.summary() + '\n')
             ip += active_deck.deck.cards[c]
     print('Total: ' + str(ip))
 
-def cmd_listside(arg):
+def cmd_listside(arg, summarize=False):
     """Print active deck's sideboad listing. Show only cards with Type <ARG>."""
     assert_activedeck()
     sep = '-' * 80
     print(string.center(' Sideboard ', 80, '-'))
     ip = 0
     for c in active_deck.sideboard.manaSorted():
-        if print_deckcardline(active_deck.sideboard.cards[c],
-                              active_deck.cardData.data[c], reqType=arg):
+        card = active_deck.cardData.data[c]
+        if print_deckcardline(active_deck.sideboard.cards[c], card,
+                              reqType=arg):
+            if summarize and card.summary():
+                print('       ' + card.summary() + '\n')
             ip += 1
     if ip == 0:
         print('-nothing-'.center(80))
@@ -276,6 +283,16 @@ def cmd_listall(arg):
     assert_activedeck()
     cmd_list(arg)
     cmd_listside(arg)
+
+def cmd_summary(arg):
+    """Print a summary of cards in the deck, optionally filtered by Type."""
+    assert_activedeck()
+    cmd_list(arg, summarize=True)
+
+def cmd_sidesummary(arg):
+    """Print a summary of sideboarded cards, optionally filtered by Type."""
+    assert_activedeck()
+    cmd_listside(arg, summarize=True)
 
 def cmd_link(arg):
     """Print the Gatherer link for a card."""
@@ -390,6 +407,8 @@ cmd_dict = {
     'card': cmd_card,
     'link': cmd_link,
     'list': cmd_listall,
+    'summ': cmd_summary,
+    'summside': cmd_sidesummary,
     'togglecolor': cmd_togglecolor,
     'refreshdata': cmd_refreshdata,
     'exit': cmd_exit}
