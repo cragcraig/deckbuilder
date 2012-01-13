@@ -173,14 +173,27 @@ def cmd_deckname(arg):
     active_deck.name = arg
     print('Renamed active deck \'' + active_deck.name + '\'.')
 
+def cmd_side(arg):
+    """Move a card from the active deck to its sideboard."""
+    if not arg:
+        raise UsageException('<CARD>')
+    assert_activedeck()
+    card = arg.lower()
+    if card not in active_deck.deck.cards:
+        raise ImproperArgException('Card is not in active deck.')
+    num = active_deck.deck.cards[card]
+    active_deck.deck.remove(card, num)
+    active_deck.sideboard.add(card, num)
+    cmd_listall('')
+
 def cmd_add(arg):
     """Add a card to the active deck."""
     card, num = parse_numarg(arg)
     if not card or not num:
-        raise UsageException('[<NUM>] <CARD>')
+        raise UsageException('<NUM> <CARD>')
     assert_activedeck()
     if active_deck.deck.add(card, num):
-        cmd_list('')
+        cmd_listall('')
     else:
         print('Unable to find card data.')
 
@@ -188,10 +201,10 @@ def cmd_addside(arg):
     """Add a card to the active deck's sideboard."""
     card, num = parse_numarg(arg)
     if not card or not num:
-        raise UsageException('[<NUM>] <CARD>')
+        raise UsageException('<NUM> <CARD>')
     assert_activedeck()
     if active_deck.sideboard.add(card, num):
-        cmd_listside('')
+        cmd_listall('')
     else:
         print('Unable to find card data.')
 
@@ -199,23 +212,23 @@ def cmd_remove(arg):
     """Remove a card from the active deck."""
     card, num = parse_numarg(arg)
     if not card or not num:
-        raise UsageException('[<NUM>] <CARD>')
+        raise UsageException('<NUM> <CARD>')
     assert_activedeck()
     if card.lower() not in active_deck.deck.cards:
         raise ImproperArgException('Card is not in active deck.')
     active_deck.deck.remove(card, num)
-    cmd_list('')
+    cmd_listall('')
 
 def cmd_removeside(arg):
     """Remove a card from the active deck's sideboard."""
     card, num = parse_numarg(arg)
     if not card or not num:
-        raise UsageException('[<NUM>] <CARD>')
+        raise UsageException('<NUM> <CARD>')
     assert_activedeck()
     if card.lower() not in active_deck.sideboard.cards:
         raise ImproperArgException('Card is not in active deck\'s sideboard.')
     active_deck.sideboard.remove(card, num)
-    cmd_listside('')
+    cmd_listall('')
 
 def cmd_stats(arg):
     """Print active deck and sideboard size."""
@@ -322,9 +335,9 @@ def cmd_prob(arg):
     cprint('bold', '\n Turn   Cards   Probability')
     print('------|-------|-------------')
     for i in xrange(16):
-        print(str(i).rjust(4) + str(7 + i).rjust(8) +
-              str(active_deck.prob_anddraw(nlist, 7 + i) * 100)[:5].rjust(12) +
-                  '%')
+        print(str(i).rjust(4) + str(7 + i).rjust(8) + '    ' +
+              ('%.2f' % (active_deck.prob_anddraw(nlist, 7 + i)*100)).rjust(8) +
+              '%')
 
 def parse_andlist(arg):
     """Parse a list of draw AND requirements."""
@@ -368,7 +381,8 @@ cmd_dict = {
     'randhand': cmd_hand,
     'add': cmd_add,
     'rm': cmd_remove,
-    'sideboard': cmd_addside,
+    'sideboard': cmd_side,
+    'sideboardadd': cmd_addside,
     'sideboardrm': cmd_removeside,
     'size': cmd_stats,
     'managram': cmd_managram,

@@ -131,12 +131,15 @@ class Card:
         """Attempts to scrape card data from gatherer.wizards.com.
         
         Reuses the given BeautifulSoup if not None. This is so double-sided
-        cards do not need to request the gather page data twice.
+        cards do not need to request the same gather page data twice.
         """
         self.loaded = False
         if not soup:
-            response = urllib2.urlopen(url(self.name))
-            html = response.read()
+            try:
+                response = urllib2.urlopen(url(self.name))
+                html = response.read()
+            except urllib2.URLError:
+                return
             soup = BeautifulSoup.BeautifulSoup(html)
         # Scrape data.
         style = self._checkCardstyle(soup)

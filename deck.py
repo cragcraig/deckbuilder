@@ -48,6 +48,8 @@ class Deck:
     def _recurseprob(self, nlist, drawn, undrawn, handsize):
         decksize = self.deck.size()
         c = 0
+        if nlist[0][0] > nlist[0][1]:
+            return 0.
         for n in xrange(nlist[0][0], nlist[0][1] + 1):
             if n > handsize - drawn or\
                nlist[0][1] - n > decksize - handsize - undrawn:
