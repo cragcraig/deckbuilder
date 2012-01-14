@@ -22,7 +22,10 @@ class MissingDeckException(Exception):
 # Main routine
 def main():
     """Prompt and execute commands."""
-    print('MtG Deck Builder')
+    print('\n*** Magic: The Gathering Deck Builder ***')
+    if 'readline' not in sys.modules:
+        print('\n> The readline module is not avaliable.\n'
+              '> Line editing and tab completion is disabled.')
     cont = True
     cmd = ''
     prev = ''
@@ -53,7 +56,8 @@ def exec_cmd(cmdstr):
                 print('usage: ' + cmd + ' ' + str(e))
             except MissingDeckException:
                 print('No active deck.')
-            readline.add_history(cmdstr)
+            if 'readline' in sys.modules:
+                readline.add_history(cmdstr)
         else:
             print('%s is not a command. Try \'help\'.' % str(cmd))
     return True
