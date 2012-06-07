@@ -52,9 +52,9 @@ def exec_cmd(cmdstr):
         elif cmd in cmd_dict:
             try:
                 cmd_dict[cmd](arg)
-            except ImproperArgException, e:
+            except ImproperArgException as e:
                 print(str(e))
-            except UsageException, e:
+            except UsageException as e:
                 print('usage: ' + cmd + ' ' + str(e))
             except MissingDeckException:
                 print('No active deck.')
