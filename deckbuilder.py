@@ -5,6 +5,8 @@ import re
 import string
 import sys
 import cPickle as pickle
+import webbrowser # for cmd_web()
+import os # for cmd_decklist
 
 import cards
 import deck
@@ -177,6 +179,14 @@ def cmd_deck(arg):
         active_deck = deck.Deck(arg)
         print('Created new deck \'' + active_deck.name + '\'.')
 
+def cmd_decklist(arg):
+    """List the decks in the current directory."""
+    print('-'*15)
+    for fn in os.listdir('.'):
+        if fn.endswith('.deck'):
+            print(pickle.load(open(fn, "rb")).name)
+#    print([f for f in os.listdir('.') if f.endswith('.deck')])
+
 def cmd_save(arg):
     """Save the active deck."""
     assert_activedeck()
@@ -317,10 +327,16 @@ def cmd_sidesummary(arg):
     cmd_listside(arg, summarize=True)
 
 def cmd_link(arg):
-    """Print the Gatherer link for a card."""
+    """Display a Gatherer link for a card."""
     if not arg:
         raise UsageException('<CARD>')
     print(cards.url(arg))
+
+def cmd_web(arg):
+    """Open default web browser to Gatherer link for a card."""
+    if not arg:
+        raise UsageException('<CARD>')
+    webbrowser.open(cards.url(arg))
 
 def cmd_card(arg):
     """Display card info from an online database."""
@@ -433,7 +449,9 @@ cmd_dict = {
     'summside': cmd_sidesummary,
     'togglecolor': cmd_togglecolor,
     'refreshdata': cmd_refreshdata,
-    'exit': cmd_exit}
+    'exit': cmd_exit,
+    'web': cmd_web,
+    'decklist': cmd_decklist}
 
 
 # Readline
