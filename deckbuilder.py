@@ -24,7 +24,7 @@ class MissingDeckError(Exception):
 # Main routine
 def main():
     """Prompt and execute commands."""
-    print('\n*** Magic: The Gathering Deck Builder ***')
+    cprint('bold','\n*** Magic: The Gathering Deck Builder ***')
     if 'readline' not in sys.modules:
         print('\n> The readline module is not avaliable.\n'
               '> Line editing and tab completion is disabled.')
@@ -424,15 +424,15 @@ def cmd_togglecolor(arg):
     global global_coloron
     global_coloron = not global_coloron
 
-def cmd_manalyst(arg):
-    """Display land and mana statistics."""
+def cmd_csdist(arg):
+    """Display color symbol distribution for the active deck."""
     assert_activedeck()
     mdict = {}
     for color in _cardcolors.keys():
-        mdict[color] = active_deck.deck.countColorSymbols(color)
+        mdict[color] = active_deck.deck.countColorSymbol(color)
     tot = sum(mdict.values())
-    cprint('bold','\n Mana Symbol Distribution')
-    print('-' * 26)
+    cprint('bold','\n Color Symbol Distribution')
+    print('-' * 27)
     for color in mdict.keys():
         n = mdict[color];
         mprint(color, '   {' + color + '} x' + str(n) + 
@@ -465,7 +465,7 @@ cmd_dict = {
     'exit': cmd_exit,
     'web': cmd_web,
     'decklist': cmd_decklist,
-    'manalyst': cmd_manalyst}
+    'csdist': cmd_csdist}
 
 
 # Readline

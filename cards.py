@@ -222,11 +222,19 @@ class Card:
 
     def snippet(self):
         """Return a one line text snippet summarizing card."""
-        return str(self.name).ljust(25) +\
-               ('   ' + ' '.join(self.types)).ljust(32) +\
-               str(self.cost if self.cost is not None else '').ljust(10) +\
-               str(str(self.power) + ' / ' + str(self.toughness)\
-                   if self.isCreature() else '').rjust(4)
+        fields = [25, 25, 15, 8]
+        strings =   [str(self.name),
+                    ('   ' + ' '.join(self.types)),
+                    str(self.cost if self.cost is not None else ''),
+                    str(str(self.power) + ' / ' + str(self.toughness)\
+                        if self.isCreature() else '')]
+        ret = []
+        for f, s in zip(fields, strings):
+            if len(s) > f:
+                ret += (s[:f - 4] + "...").ljust(f)
+            else:
+                ret += s.ljust(f)
+        return ''.join(ret)
 
     def summary(self, n=70):
         """Return a summary in one line and a max of n characters."""
