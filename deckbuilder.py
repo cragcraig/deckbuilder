@@ -5,20 +5,20 @@ import re
 import string
 import sys
 import cPickle as pickle
-import webbrowser # for cmd_web()
-import os # for cmd_decklist
+import webbrowser
+import os
 
 import cards
 import deck
 
 # Custom exceptions
-class ImproperArgException(Exception):
+class ImproperArgError(Exception):
     pass
 
-class UsageException(Exception):
+class UsageError(Exception):
     pass
 
-class MissingDeckException(Exception):
+class MissingDeckError(Exception):
     pass
 
 # Main routine
@@ -52,11 +52,11 @@ def exec_cmd(cmdstr):
         elif cmd in cmd_dict:
             try:
                 cmd_dict[cmd](arg)
-            except ImproperArgException, e:
+            except ImproperArgError as e:
                 print(str(e))
-            except UsageException, e:
+            except UsageError as e:
                 print('usage: ' + cmd + ' ' + str(e))
-            except MissingDeckException:
+            except MissingDeckError:
                 print('No active deck.')
             if 'readline' in sys.modules:
                 readline.add_history(cmdstr)
@@ -87,7 +87,7 @@ def parse_numarg(arg):
     m = re.match('(\d*)\s*(.*)$', arg)
     if m and m.group(1) and m.group(1) > 0:
         return (m.group(2), int(m.group(1)))
-    raise ImproperArgException('Argument should be of the form <NUM> <ARG>.')
+    raise ImproperArgError('Argument should be of the form <NUM> <ARG>.')
 
 def print_deckcardline(count, card, reqType=None):
     """Print a snippet line for a card in the active deck.
@@ -103,9 +103,9 @@ def print_deckcardline(count, card, reqType=None):
     return True
 
 def assert_activedeck():
-    """Raise a MissingDeckException if there is not an active deck."""
+    """Raise a MissingDeckError if there is not an active deck."""
     if not active_deck:
-        raise MissingDeckException
+        raise MissingDeckError
 
 _ansicode = {
     'black': '\x1b[30m',
@@ -170,7 +170,7 @@ def cmd_deck(arg):
     """Set the active deck."""
     global active_deck
     if not arg:
-        raise UsageException('<NAME>')
+        raise UsageError('<NAME>')
     try:
         with open(deck.filename(arg), "rb") as f:
             active_deck = pickle.load(f)
@@ -197,7 +197,7 @@ def cmd_save(arg):
 def cmd_deckname(arg):
     """Change the name of the active deck."""
     if not arg or len(arg) == 0:
-        raise UsageException('<NAME>')
+        raise UsageError('<NAME>')
     assert_activedeck()
     active_deck.name = arg
     print('Renamed active deck \'' + active_deck.name + '\'.')
@@ -205,11 +205,11 @@ def cmd_deckname(arg):
 def cmd_side(arg):
     """Move a card from the active deck to its sideboard."""
     if not arg:
-        raise UsageException('<CARD>')
+        raise UsageError('<CARD>')
     assert_activedeck()
     card = arg.lower()
     if card not in active_deck.deck.cards:
-        raise ImproperArgException('Card is not in active deck.')
+        raise ImproperArgError('Card is not in active deck.')
     num = active_deck.deck.cards[card]
     active_deck.deck.remove(card, num)
     active_deck.sideboard.add(card, num)
@@ -219,7 +219,7 @@ def cmd_add(arg):
     """Add a card to the active deck."""
     card, num = parse_numarg(arg)
     if not card or not num:
-        raise UsageException('<NUM> <CARD>')
+        raise UsageError('<NUM> <CARD>')
     assert_activedeck()
     if active_deck.deck.add(card, num):
         cmd_listall('')
@@ -230,7 +230,7 @@ def cmd_addside(arg):
     """Add a card to the active deck's sideboard."""
     card, num = parse_numarg(arg)
     if not card or not num:
-        raise UsageException('<NUM> <CARD>')
+        raise UsageError('<NUM> <CARD>')
     assert_activedeck()
     if active_deck.sideboard.add(card, num):
         cmd_listall('')
@@ -241,10 +241,10 @@ def cmd_remove(arg):
     """Remove a card from the active deck."""
     card, num = parse_numarg(arg)
     if not card or not num:
-        raise UsageException('<NUM> <CARD>')
+        raise UsageError('<NUM> <CARD>')
     assert_activedeck()
     if card.lower() not in active_deck.deck.cards:
-        raise ImproperArgException('Card is not in active deck.')
+        raise ImproperArgError('Card is not in active deck.')
     active_deck.deck.remove(card, num)
     cmd_listall('')
 
@@ -252,10 +252,10 @@ def cmd_removeside(arg):
     """Remove a card from the active deck's sideboard."""
     card, num = parse_numarg(arg)
     if not card or not num:
-        raise UsageException('<NUM> <CARD>')
+        raise UsageError('<NUM> <CARD>')
     assert_activedeck()
     if card.lower() not in active_deck.sideboard.cards:
-        raise ImproperArgException('Card is not in active deck\'s sideboard.')
+        raise ImproperArgError('Card is not in active deck\'s sideboard.')
     active_deck.sideboard.remove(card, num)
     cmd_listall('')
 
@@ -329,19 +329,19 @@ def cmd_sidesummary(arg):
 def cmd_link(arg):
     """Display a Gatherer link for a card."""
     if not arg:
-        raise UsageException('<CARD>')
+        raise UsageError('<CARD>')
     print(cards.url(arg))
 
 def cmd_web(arg):
     """Open default web browser to Gatherer link for a card."""
     if not arg:
-        raise UsageException('<CARD>')
-    webbrowser.open(cards.url(arg))
+        raise UsageError('<CARD>')
+    webbrowser.open_new_tab(cards.url(arg))
 
 def cmd_card(arg):
     """Display card info from an online database."""
     if not arg:
-        raise UsageException('<CARD>')
+        raise UsageError('<CARD>')
     # Use preloaded data if already in active deck, otherwise fetch.
     if active_deck and arg.lower() in active_deck.cardData.data:
         card = active_deck.cardData.data[arg.lower()]
@@ -382,7 +382,7 @@ def cmd_managram(arg):
 def cmd_prob(arg):
     """Probability of drawing a certain selection of cards."""
     if not arg:
-        raise UsageException('<NUM> <CARD> [OR <CARD> [OR ...]] [AND <NUM> '
+        raise UsageError('<NUM> <CARD> [OR <CARD> [OR ...]] [AND <NUM> '
                              '<CARD> [OR <CARD> [OR ...]] [AND ...]]')
     assert_activedeck()
     nlist = parse_andlist(arg)
@@ -399,7 +399,7 @@ def parse_andlist(arg):
     cl = []
     l = [parse_orlist(s, cl) for s in re.split('\s+AND\s+', arg)]
     if len(cl) != len(set(cl)):
-        raise ImproperArgException('Each card may appear only once.')
+        raise ImproperArgError('Each card may appear only once.')
     return l
 
 def parse_orlist(arg, cardlist=None):
@@ -413,7 +413,7 @@ def parse_orlist(arg, cardlist=None):
     orlist = re.split('\s+OR\s+', arg)
     orlist = [c.lower() for c in orlist]
     if any((c not in active_deck.deck.cards for c in orlist)):
-        raise ImproperArgException('Cards are not in active deck.')
+        raise ImproperArgError('Cards are not in active deck.')
     s = sum((active_deck.deck.cards[c] for c in orlist))
     if cardlist is not None:
         cardlist.extend(orlist)
