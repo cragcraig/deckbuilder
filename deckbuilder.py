@@ -97,7 +97,7 @@ def print_deckcardline(count, card, reqType=None):
     """
     if reqType and not card.hasTypes(reqType.split()):
         return False
-    print(str(count).rjust(3) + '   ', end='')
+    print(str(count).rjust(3), end=' '*3)
     mprint(card.color(),
            card.snippet())
     return True
@@ -192,7 +192,8 @@ def cmd_save(arg):
     assert_activedeck()
     with open(deck.filename(active_deck.name), "wb") as f:
         pickle.dump(active_deck, f)
-    print('Saved deck \'' + active_deck.name + '\'.')
+    print('Saved deck \'' + active_deck.name + '\'. '
+          'To load use command \'deck ' + active_deck.name +'\'.')
 
 def cmd_deckname(arg):
     """Change the name of the active deck."""
@@ -500,7 +501,7 @@ def readline_printmatches(substitution, matches, longest_match_length):
     # Print matches.
     spacing = max((len(s) for s in printmatches))
     for s in printmatches:
-        print(s.ljust(spacing), end=' ')
+        print(s.ljust(spacing), end='  ')
     print('\n' + get_prompt() + substitution, end='')
 
 def readline_init():

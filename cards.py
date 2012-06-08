@@ -10,6 +10,12 @@ def url(name):
     url_prefix = 'http://ww2.wizards.com/gatherer/CardDetails.aspx?name='
     return url_prefix + name.replace(' ', '%20')
 
+def cutoff_text(text, max_length):
+    """Reduce text to max_length, ending with "..." if longer."""
+    if len(text) > max_length:
+        return text[:max_length - 3] + "..."
+    return text
+
 def _scrape(soup, title):
     """Scrape a BeautifulSoup for the value div of the div with id=title."""
     scrape = soup.find('div', id=title)
@@ -75,8 +81,8 @@ def _conv_all_alt(l):
     """Converts all alt types to symbols."""
     r = []
     for s in l:
-        if s in _alt_to_sym:
-            r.append(_alt_to_sym[s])
+        if _alt_to_id(s) != '?':
+            r.append(_alt_to_id(s))
         else:
             r.append(s)
     return r
@@ -87,16 +93,34 @@ def _alt_to_id(mana):
         return str(int(mana))
     else:
         if mana not in _alt_to_sym:
-            return '?'
+            if mana == 'None':
+                return 'None'
+            split = re.match('(\S+)\s+or\s+(\S+)$', mana)
+            if split:
+                return '{' + _alt_to_sym_safe(split.group(1)) + '/' +\
+                       _alt_to_sym_safe(split.group(2)) + '}'
+            else:
+                return '?'
         else:
-            return _alt_to_sym[mana]
+            return '{' + _alt_to_sym[mana] + '}'
+
+def _alt_to_sym_safe(mana):
+    """Wraps _alt_to_sym safely, substituting numbers and ?."""
+    if mana in _alt_to_sym:
+      return _alt_to_sym[mana]
+    if mana.lower() in _eng_to_num:
+      return str(_eng_to_num[mana.lower()])
+    return '?'
 
 # Gatherer scrape alt tags.
-_alt_to_sym = {'Green': '{G}', 'Red': '{R}', 'Black': '{B}', 'Blue': '{U}',
-               'White': '{W}', 'Variable Colorless': '{X}', 'Tap': '{T}',
-               'None': 'None', 'Phyrexian Green': '{GP}',
-               'Phyrexian Red': '{RP}', 'Phyrexian Black': '{BP}',
-               'Phyrexian Blue': '{UP}', 'Phyrexian White': '{WP}'}
+_alt_to_sym = {'Green': 'G', 'Red': 'R', 'Black': 'B', 'Blue': 'U',
+               'White': 'W', 'Variable Colorless': 'X', 'Tap': 'T',
+               'Phyrexian Green': 'GP', 'Phyrexian Red': 'RP',
+               'Phyrexian Black': 'BP', 'Phyrexian Blue': 'UP',
+               'Phyrexian White': 'WP', 'Untap': 'Q'}
+
+# Numbers in English
+_eng_to_num = {'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6}
 
 # Gatherer scrape div ids.
 scrapeid_cardstyles = ['', '_ctl05', '_ctl06']
@@ -159,7 +183,7 @@ class Card:
         self.convertedCost = _scrape(soup, scrapeid_cmc % style)
         types = _scrape_replaceunicode(soup, scrapeid_type % style).split('?')
         self.types = types[0].split()
-        if (len(types) > 1):
+        if len(types) > 1:
             self.subtypes = types[1].split()
         else:
             self.subtypes = []
@@ -192,7 +216,7 @@ class Card:
         return tc in self.types or tc in self.subtypes
 
     def hasTypes(self, tlist):
-        """Return True if card has all Types in t as a major or subtype."""
+        """Return True if card has all Types in tlist as a major or subtype."""
         return not any((not self.hasType(t) for t in tlist))
 
     def __str__(self):
@@ -222,28 +246,19 @@ class Card:
 
     def snippet(self):
         """Return a one line text snippet summarizing card."""
-        fields = [25, 25, 15, 8]
-        strings =   [str(self.name),
-                    ('   ' + ' '.join(self.types)),
-                    str(self.cost if self.cost is not None else ''),
-                    str(str(self.power) + ' / ' + str(self.toughness)\
-                        if self.isCreature() else '')]
-        ret = []
-        for f, s in zip(fields, strings):
-            if len(s) > f:
-                ret += (s[:f - 4] + "...").ljust(f)
-            else:
-                ret += s.ljust(f)
-        return ''.join(ret)
+        return cutoff_text(str(self.name), 24).ljust(25) +\
+               cutoff_text(('   ' + ' '.join(self.types)), 24).ljust(25) +\
+               cutoff_text(str(self.cost if self.cost is not None else ''),
+                           16).ljust(17) +\
+               str(str(self.power).rjust(2) + ' / ' + str(self.toughness)\
+                   if self.isCreature() else '')
 
     def summary(self, n=70):
         """Return a summary in one line and a max of n characters."""
         if not self.text:
             return None
         s = self.text.replace('\n', '   ')
-        if len(s) > n:
-            s = s[:n - 3] + "..."
-        return s
+        return cutoff_text(s, n)
 
     def color(self):
         """Get the card color."""
