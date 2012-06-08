@@ -192,7 +192,8 @@ def cmd_save(arg):
     assert_activedeck()
     with open(deck.filename(active_deck.name), "wb") as f:
         pickle.dump(active_deck, f)
-    print('Saved deck \'' + active_deck.name + '\'.')
+    print('Saved deck \'' + active_deck.name + '\'. '
+          'To load use command \'deck ' + active_deck.name +'\'.')
 
 def cmd_deckname(arg):
     """Change the name of the active deck."""
