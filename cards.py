@@ -10,6 +10,12 @@ def url(name):
     url_prefix = 'http://ww2.wizards.com/gatherer/CardDetails.aspx?name='
     return url_prefix + name.replace(' ', '%20')
 
+def cutoff_text(text, max_length):
+    """Reduce text to max_length, ending with "..." if longer."""
+    if len(text) > max_length:
+        return text[:max_length - 3] + "..."
+    return text
+
 def _scrape(soup, title):
     """Scrape a BeautifulSoup for the value div of the div with id=title."""
     scrape = soup.find('div', id=title)
@@ -240,20 +246,19 @@ class Card:
 
     def snippet(self):
         """Return a one line text snippet summarizing card."""
-        return str(self.name).ljust(25) +\
-               ('   ' + ' '.join(self.types)).ljust(25) +\
-               str(self.cost if self.cost is not None else '').ljust(17) +\
-               str(str(self.power) + ' / ' + str(self.toughness)\
-                   if self.isCreature() else '').rjust(4)
+        return cutoff_text(str(self.name), 24).ljust(25) +\
+               cutoff_text(('   ' + ' '.join(self.types)), 24).ljust(25) +\
+               cutoff_text(str(self.cost if self.cost is not None else ''),
+                           16).ljust(17) +\
+               str(str(self.power).rjust(2) + ' / ' + str(self.toughness)\
+                   if self.isCreature() else '')
 
     def summary(self, n=70):
         """Return a summary in one line and a max of n characters."""
         if not self.text:
             return None
         s = self.text.replace('\n', '   ')
-        if len(s) > n:
-            s = s[:n - 3] + "..."
-        return s
+        return cutoff_text(s, n)
 
     def color(self):
         """Get the card color."""

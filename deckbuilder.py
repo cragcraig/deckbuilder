@@ -97,7 +97,7 @@ def print_deckcardline(count, card, reqType=None):
     """
     if reqType and not card.hasTypes(reqType.split()):
         return False
-    print(str(count).rjust(3) + '   ', end='')
+    print(str(count).rjust(3), end=' '*3)
     mprint(card.color(),
            card.snippet())
     return True
@@ -487,7 +487,7 @@ def readline_printmatches(substitution, matches, longest_match_length):
     # Print matches.
     spacing = max((len(s) for s in printmatches))
     for s in printmatches:
-        print(s.ljust(spacing), end=' ')
+        print(s.ljust(spacing), end='  ')
     print('\n' + get_prompt() + substitution, end='')
 
 def readline_init():
