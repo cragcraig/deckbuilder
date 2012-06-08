@@ -223,8 +223,8 @@ class Card:
     def snippet(self):
         """Return a one line text snippet summarizing card."""
         return str(self.name).ljust(25) +\
-               ('   ' + ' '.join(self.types)).ljust(25) +\
-               str(self.cost if self.cost is not None else '').ljust(17) +\
+               ('   ' + ' '.join(self.types)).ljust(32) +\
+               str(self.cost if self.cost is not None else '').ljust(10) +\
                str(str(self.power) + ' / ' + str(self.toughness)\
                    if self.isCreature() else '').rjust(4)
 

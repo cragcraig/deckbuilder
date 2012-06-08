@@ -424,6 +424,19 @@ def cmd_togglecolor(arg):
     global global_coloron
     global_coloron = not global_coloron
 
+def cmd_manalyst(arg):
+    """Display land and mana statistics."""
+    assert_activedeck()
+    mdict = {}
+    for color in _cardcolors.keys():
+        mdict[color] = active_deck.deck.countColorSymbols(color)
+    tot = sum(mdict.values())
+    cprint('bold','\n Mana Symbol Distribution')
+    print('-' * 26)
+    for color in mdict.keys():
+        n = mdict[color];
+        mprint(color, '   {' + color + '} x' + str(n) + 
+                '\t(%.0f' % (float(n) / tot * 100) + '%)' ) if n else ''
 
 # Global state.
 global_coloron = True
@@ -451,7 +464,8 @@ cmd_dict = {
     'refreshdata': cmd_refreshdata,
     'exit': cmd_exit,
     'web': cmd_web,
-    'decklist': cmd_decklist}
+    'decklist': cmd_decklist,
+    'manalyst': cmd_manalyst}
 
 
 # Readline
