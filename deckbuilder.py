@@ -432,13 +432,35 @@ def cmd_csdist(arg):
     for color in _cardcolors.keys():
         mdict[color] = active_deck.deck.countColorSymbol(color)
     tot = sum(mdict.values())
-    cprint('bold','\n Color Symbol Distribution')
-    print('-' * 27)
+    cprint('bold','\n' + str.center('Color Symbol Distribution',40))
+    print('-' * 40)
     for color in mdict.keys():
         n = mdict[color];
-        mprint(color, '   {' + color + '} x' + str(n) + 
-                '\t(%.0f' % (float(n) / tot * 100) + '%)' ) if n else ''
+        mprint(color, '  {' + color + '} x' + str(n) + 
+                '\t(%.0f' % (float(n) / tot * 100) + 
+                '% of symbols)' ) if n else ''
 
+def cmd_cdist(arg):
+    """Display card color distribution for the active deck."""
+    assert_activedeck()
+    mdict = {}
+    for color in _cardcolors.keys():
+        mdict[color] = active_deck.deck.countColor(color)
+    tot = sum(mdict.values())
+    cprint('bold','\n' + str.center('Card Color Distribution',50))
+    print('-' * 50)
+    for color in mdict.keys():
+        n = mdict[color];
+        mprint(color, '  {' + color + '} x' + str(n) + 
+                '\t(%.0f' % (float(n) / tot * 100) + '% of colors, ' +
+                '%.0f' % (float(n) / len(active_deck.deck.list()) * 100) +\
+                '% of cards)') if n else ''
+                
+def cmd_landdist(arg):
+    """Display land distribution for the active deck."""
+    assert_activedeck()
+    print(active_deck.deck.countType('Land'))
+                
 # Global state.
 global_coloron = True
 active_deck = None
@@ -466,7 +488,9 @@ cmd_dict = {
     'exit': cmd_exit,
     'web': cmd_web,
     'decklist': cmd_decklist,
-    'csdist': cmd_csdist}
+    'csdist': cmd_csdist,
+    'cdist': cmd_cdist,
+    'landdist': cmd_landdist}
 
 
 # Readline
