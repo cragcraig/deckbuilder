@@ -178,7 +178,7 @@ class CardPile:
     def listType(self, type):
         """Count the number of cards of the specified type in the deck."""
         return filter(lambda c: re.search(type, 
-                        str(self.cardData.data[c].types)), 
+                        str(self.cardData.data[c].types), re.IGNORECASE), 
                self.list())
 
 class CardData:

@@ -411,11 +411,24 @@ def parse_orlist(arg, cardlist=None):
     if m:
         d = int(m.group(1))
         arg = m.group(2)
-    orlist = re.split('\s+OR\s+', arg)
-    orlist = [c.lower() for c in orlist]
+    tmplist = re.split('\s+OR\s+', arg)
+    
+    orlist = []
+    s = 0
+    for c in tmplist:
+        m = re.match('ANY\s+(.*$)', c)
+        if m:
+            s += len(active_deck.deck.listType(m.group(1)))
+            #print('ANY of type: ' + m.group(1) + ', s = ' + str(s))
+        else:
+            orlist.append(c.lower())
+            #print('Appended \'' + c.lower() + '\' to orlist')
+            
+    #print(orlist)
+    
     if any((c not in active_deck.deck.cards for c in orlist)):
         raise ImproperArgError('Cards are not in active deck.')
-    s = sum((active_deck.deck.cards[c] for c in orlist))
+    s += sum((active_deck.deck.cards[c] for c in orlist))
     if cardlist is not None:
         cardlist.extend(orlist)
     return (d, s)
