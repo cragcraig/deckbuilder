@@ -7,9 +7,12 @@ import sys
 import cPickle as pickle
 import webbrowser
 import os
+from bs4 import BeautifulSoup
+import urllib2
 
 import cards
 import deck
+import dbimporter
 
 # Custom exceptions
 class ImproperArgError(Exception):
@@ -107,6 +110,22 @@ def assert_activedeck():
     if not active_deck:
         raise MissingDeckError
 
+def _scrapeDeck(id):
+    """Scrapes a deck-listing from mtgdeckbuilder.net given its ID."""
+    try:
+        page = urllib2.urlopen('http://www.mtgdeckbuilder.net/Decks/PrintableDeck/' + id)
+        html = page.read()
+    except urllib2.URLError:
+        return None
+    soup = BeautifulSoup(html)
+    dl = []
+    dl.append(soup.span.strong.string)
+    tr = soup.find_all('tr',style='line-height: 18px')[1]
+    dl += [s.replace(u'\xa0',u'') 
+            for s in tr.stripped_strings
+            if not re.search('Creatures|Lands|Spells|Cards$', s)]
+    return dl
+        
 _ansicode = {
     'black': '\x1b[30m',
     'red': '\x1b[31m',
@@ -469,6 +488,28 @@ def cmd_cdist(arg):
                 '%.0f' % (float(n) / len(active_deck.deck.list()) * 100) +\
                 '% of cards)') if n else ''
 
+def cmd_import(arg):
+    """Import a deck from <mtgdeckbuilder.net> using the deck's ID number."""
+    if not arg:
+        raise UsageError('<DECK_ID>')
+    dl = _scrapeDeck(arg)
+    cmd_deck(dl.pop(0))
+    assert_activedeck()
+    print('Importing cards...')
+    sideboard = False
+    for cardset in dl:
+        m = re.match('(\d+)\s+(.*$)', cardset)
+        if m:
+            if sideboard:
+                active_deck.sideboard.add(m.group(2), int(m.group(1)))
+            else:
+                active_deck.deck.add(m.group(2), int(m.group(1)))
+        elif re.match('Sideboard$', cardset):
+            sideboard = True
+        else:
+            print('Problem parsing \'' + cardset + '\'.')
+    cmd_listall('')
+                
 # Global state.
 global_coloron = True
 active_deck = None
@@ -497,7 +538,8 @@ cmd_dict = {
     'web': cmd_web,
     'decklist': cmd_decklist,
     'csdist': cmd_csdist,
-    'cdist': cmd_cdist}
+    'cdist': cmd_cdist,
+    'import': cmd_import}
 
 
 # Readline
