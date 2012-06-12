@@ -445,8 +445,8 @@ def cmd_csdist(arg):
     for color in _cardcolors.keys():
         mdict[color] = active_deck.deck.countColorSymbol(color)
     tot = sum(mdict.values())
-    cprint('bold','\n' + str.center('Color Symbol Distribution',40))
-    print('-' * 40)
+    cprint('bold','\n' + str.center('Color Symbol Distribution',34))
+    print('-' * 34)
     for color in mdict.keys():
         n = mdict[color];
         mprint(color, '  {' + color + '} x' + str(n) + 
@@ -460,8 +460,8 @@ def cmd_cdist(arg):
     for color in _cardcolors.keys():
         mdict[color] = active_deck.deck.countColor(color)
     tot = sum(mdict.values())
-    cprint('bold','\n' + str.center('Card Color Distribution',50))
-    print('-' * 50)
+    cprint('bold','\n' + str.center('Card Color Distribution',47))
+    print('-' * 47)
     for color in mdict.keys():
         n = mdict[color];
         mprint(color, '  {' + color + '} x' + str(n) + 
