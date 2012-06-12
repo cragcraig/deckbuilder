@@ -459,8 +459,8 @@ def cmd_cdist(arg):
 def cmd_landdist(arg):
     """Display land distribution for the active deck."""
     assert_activedeck()
-    print(active_deck.deck.countType('Land'))
-                
+    print(active_deck.deck.listType('Land'))
+        
 # Global state.
 global_coloron = True
 active_deck = None

@@ -175,12 +175,12 @@ class CardPile:
                             str(self.cardData.data[c].cost)), 
                    self.list()))
 
-    def countType(self, type):
+    def listType(self, type):
         """Count the number of cards of the specified type in the deck."""
-        return len(filter(lambda c: re.search(type, 
-                            str(self.cardData.data[c].types)), 
-                   self.list()))
-        
+        return filter(lambda c: re.search(type, 
+                        str(self.cardData.data[c].types)), 
+               self.list())
+
 class CardData:
     """Holds a dictionary of card data."""
     def __init__(self):
