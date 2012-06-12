@@ -468,12 +468,7 @@ def cmd_cdist(arg):
                 '\t(%.0f' % (float(n) / tot * 100) + '% of colors, ' +
                 '%.0f' % (float(n) / len(active_deck.deck.list()) * 100) +\
                 '% of cards)') if n else ''
-                
-def cmd_landdist(arg):
-    """Display land distribution for the active deck."""
-    assert_activedeck()
-    print(active_deck.deck.listType('Land'))
-        
+
 # Global state.
 global_coloron = True
 active_deck = None
@@ -502,8 +497,7 @@ cmd_dict = {
     'web': cmd_web,
     'decklist': cmd_decklist,
     'csdist': cmd_csdist,
-    'cdist': cmd_cdist,
-    'landdist': cmd_landdist}
+    'cdist': cmd_cdist}
 
 
 # Readline
