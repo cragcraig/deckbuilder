@@ -12,7 +12,6 @@ import urllib2
 
 import cards
 import deck
-import dbimporter
 
 # Custom exceptions
 class ImproperArgError(Exception):
