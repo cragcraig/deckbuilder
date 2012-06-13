@@ -352,10 +352,13 @@ def cmd_link(arg):
     print(cards.url(arg))
 
 def cmd_web(arg):
-    """Open default web browser to Gatherer link for a card."""
+    """Open default web browser to: Gatherer given a card, a deck given an ID."""
     if not arg:
-        raise UsageError('<CARD>')
-    webbrowser.open_new_tab(cards.url(arg))
+        raise UsageError('<CARD|DECK_ID>')
+    elif re.match('^\d+$',arg):
+        webbrowser.open_new_tab('http://www.mtgdeckbuilder.net/Decks/ViewDeck/' + arg)
+    else:
+        webbrowser.open_new_tab(cards.url(arg))
 
 def cmd_card(arg):
     """Display card info from an online database."""
