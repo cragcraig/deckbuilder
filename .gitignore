@@ -1,0 +1,9 @@
+# .gitignore for MTG Deckbuilder
+
+*.py[cod]
+*.deck
+*.sh
+BeautifulSoup.py
+
+README
+bs4
