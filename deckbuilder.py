@@ -494,11 +494,14 @@ def cmd_import(arg):
     dl = _scrapeDeck(arg)
     cmd_deck(dl.pop(0))
     assert_activedeck()
-    print('Importing cards...')
     sideboard = False
+    tot = 0
     for cardset in dl:
         m = re.match('(\d+)\s+(.*$)', cardset)
         if m:
+            tot += int(m.group(1))
+            sys.stdout.write('  {0} cards imported\r'.format(tot))
+            sys.stdout.flush()
             if sideboard:
                 active_deck.sideboard.add(m.group(2), int(m.group(1)))
             else:
