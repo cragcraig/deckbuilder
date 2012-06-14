@@ -490,22 +490,21 @@ def cmd_import(arg):
         return
     cmd_deck(dl.pop(0))
     assert_activedeck()
-    sideboard = False
+    pile = active_deck.deck
     tot = 0
     for cardset in dl:
-        m = re.match('(\d+)\s+(.*$)', cardset)
+        m = re.match('(\d+)\s+(.*)$', cardset)
         if m:
             num = int(m.group(1))
             cname = m.group(2)
-            tot += num
-            sys.stdout.write('  {0} cards imported\r'.format(tot))
-            sys.stdout.flush()
-            if sideboard:
-                active_deck.sideboard.add(cname, num)
+            if pile.add(cname, num):
+              tot += num
+              sys.stdout.write('  {0} cards imported\r'.format(tot))
+              sys.stdout.flush()
             else:
-                active_deck.deck.add(cname, num)
+              print('Unable to find card data for \'' + cname + '\'.')
         elif re.match('Sideboard$', cardset):
-            sideboard = True
+            pile = active_deck.sideboard
         else:
             print('Problem parsing \'' + cardset + '\'.')
     cmd_listall('')
