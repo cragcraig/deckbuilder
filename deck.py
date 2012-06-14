@@ -1,5 +1,6 @@
 import math
 import random
+import re
 
 import cards
 
@@ -157,6 +158,29 @@ class CardPile:
                      if self.cardData.data[c].convertedCost is not None else 0)
                      for c in self.cards))
 
+    def countColorSymbol(self, colorSymbol):
+        """Count the number of the specified color symbol in the deck."""
+        if not re.match('^[RGBWU]$',colorSymbol): 
+            return None
+        n = 0
+        for c in self.list():
+            n += str(self.cardData.data[c].cost).count(colorSymbol)
+        return n
+        
+    def countColor(self, color):
+        """Count the number of cards of the specified color in the deck."""
+        if not re.match('^[RGBWU]$',color): 
+            return None
+        return len(filter(lambda c: re.search(color, 
+                            str(self.cardData.data[c].cost)), 
+                   self.list()))
+
+    def listType(self, type):
+        """Count the number of cards of the specified type in the deck."""
+        return filter(lambda c: re.search(type, 
+                        ' '.join(self.cardData.data[c].types), 
+                        re.IGNORECASE), 
+               self.list())
 
 class CardData:
     """Holds a dictionary of card data."""

@@ -1,0 +1,7 @@
+# .gitignore for MTG Deckbuilder
+
+*.py[cod]
+
+*.deck
+*.sh
+

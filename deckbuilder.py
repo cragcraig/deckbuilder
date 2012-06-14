@@ -7,6 +7,8 @@ import sys
 import cPickle as pickle
 import webbrowser
 import os
+from bs4 import BeautifulSoup
+import urllib2
 
 import cards
 import deck
@@ -24,7 +26,7 @@ class MissingDeckError(Exception):
 # Main routine
 def main():
     """Prompt and execute commands."""
-    print('\n*** Magic: The Gathering Deck Builder ***')
+    cprint('bold','\n*** Magic: The Gathering Deck Builder ***')
     if 'readline' not in sys.modules:
         print('\n> The readline module is not avaliable.\n'
               '> Line editing and tab completion is disabled.')
@@ -107,6 +109,27 @@ def assert_activedeck():
     if not active_deck:
         raise MissingDeckError
 
+def _scrapeDeck(id):
+    """Scrapes a deck-listing from mtgdeckbuilder.net given its ID."""
+    try:
+        page = urllib2.urlopen('http://www.mtgdeckbuilder.net/Decks/PrintableDeck/' + id)
+        html = page.read()
+    except urllib2.URLError:
+        print('Unable to read deck data.')
+        return None
+    soup = BeautifulSoup(html)
+    err = soup.find('div',{'class':'innerContentFrame'})
+    if err is not None:
+        print(err.string.strip())
+        return None
+    dl = []
+    dl.append(soup.span.strong.string)
+    tr = soup.find_all('tr',style='line-height: 18px')[1]
+    dl += [s.replace(u'\xa0',u'') 
+            for s in tr.stripped_strings
+            if not re.search('Creatures|Lands|Spells|Cards$', s)]
+    return dl
+        
 _ansicode = {
     'black': '\x1b[30m',
     'red': '\x1b[31m',
@@ -185,7 +208,6 @@ def cmd_decklist(arg):
     for fn in os.listdir('.'):
         if fn.endswith('.deck'):
             print(pickle.load(open(fn, "rb")).name)
-#    print([f for f in os.listdir('.') if f.endswith('.deck')])
 
 def cmd_save(arg):
     """Save the active deck."""
@@ -334,10 +356,13 @@ def cmd_link(arg):
     print(cards.url(arg))
 
 def cmd_web(arg):
-    """Open default web browser to Gatherer link for a card."""
+    """Open default web browser to: Gatherer given a card, a deck given an ID."""
     if not arg:
-        raise UsageError('<CARD>')
-    webbrowser.open_new_tab(cards.url(arg))
+        raise UsageError('<CARD|DECK_ID>')
+    elif re.match('^\d+$',arg):
+        webbrowser.open_new_tab('http://www.mtgdeckbuilder.net/Decks/ViewDeck/' + arg)
+    else:
+        webbrowser.open_new_tab(cards.url(arg))
 
 def cmd_card(arg):
     """Display card info from an online database."""
@@ -412,7 +437,7 @@ def parse_orlist(arg, cardlist=None):
         d = int(m.group(1))
         arg = m.group(2)
     orlist = re.split('\s+OR\s+', arg)
-    orlist = [c.lower() for c in orlist]
+    
     if any((c not in active_deck.deck.cards for c in orlist)):
         raise ImproperArgError('Cards are not in active deck.')
     s = sum((active_deck.deck.cards[c] for c in orlist))
@@ -425,7 +450,66 @@ def cmd_togglecolor(arg):
     global global_coloron
     global_coloron = not global_coloron
 
+def cmd_csdist(arg):
+    """Display color symbol distribution for the active deck."""
+    assert_activedeck()
+    mdict = {}
+    for color in _cardcolors.keys():
+        mdict[color] = active_deck.deck.countColorSymbol(color)
+    tot = sum(mdict.values())
+    cprint('bold','\n' + str.center('Color Symbol Distribution',34))
+    print('-' * 34)
+    for color in mdict.keys():
+        n = mdict[color];
+        mprint(color, '  {' + color + '} x' + str(n) + 
+                '\t(%.0f' % (float(n) / tot * 100) + 
+                '% of symbols)' ) if n else ''
 
+def cmd_cdist(arg):
+    """Display card color distribution for the active deck."""
+    assert_activedeck()
+    mdict = {}
+    for color in _cardcolors.keys():
+        mdict[color] = active_deck.deck.countColor(color)
+    tot = sum(mdict.values())
+    cprint('bold','\n' + str.center('Card Color Distribution',47))
+    print('-' * 47)
+    for color in mdict.keys():
+        n = mdict[color];
+        mprint(color, '  {' + color + '} x' + str(n) + 
+                '\t(%.0f' % (float(n) / tot * 100) + '% of colors, ' +
+                '%.0f' % (float(n) / len(active_deck.deck.list()) * 100) +\
+                '% of cards)') if n else ''
+
+def cmd_import(arg):
+    """Import a deck from <mtgdeckbuilder.net> using the deck's ID number."""
+    if not arg:
+        raise UsageError('<DECK_ID>')
+    dl = _scrapeDeck(arg)
+    if dl is None:
+        return
+    cmd_deck(dl.pop(0))
+    assert_activedeck()
+    sideboard = False
+    tot = 0
+    for cardset in dl:
+        m = re.match('(\d+)\s+(.*$)', cardset)
+        if m:
+            num = int(m.group(1))
+            cname = m.group(2)
+            tot += num
+            sys.stdout.write('  {0} cards imported\r'.format(tot))
+            sys.stdout.flush()
+            if sideboard:
+                active_deck.sideboard.add(cname, num)
+            else:
+                active_deck.deck.add(cname, num)
+        elif re.match('Sideboard$', cardset):
+            sideboard = True
+        else:
+            print('Problem parsing \'' + cardset + '\'.')
+    cmd_listall('')
+                
 # Global state.
 global_coloron = True
 active_deck = None
@@ -452,7 +536,10 @@ cmd_dict = {
     'refreshdata': cmd_refreshdata,
     'exit': cmd_exit,
     'web': cmd_web,
-    'decklist': cmd_decklist}
+    'decklist': cmd_decklist,
+    'csdist': cmd_csdist,
+    'cdist': cmd_cdist,
+    'import': cmd_import}
 
 
 # Readline
