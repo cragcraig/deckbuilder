@@ -504,19 +504,21 @@ def cmd_import(arg):
     cmd_deck(dl.pop(0))
     assert_activedeck()
     sideboard = False
-    tot = 0
+    i = 0
+    tot = len(dl)-1
     for cardset in dl:
         m = re.match('(\d+)\s+(.*$)', cardset)
         if m:
             num = int(m.group(1))
             cname = m.group(2)
-            tot += num
-            sys.stdout.write('  {0} cards imported\r'.format(tot))
+            sys.stdout.write('  Importing... {0:.0f}% complete\r' 
+                .format(float(i)/tot*100))
             sys.stdout.flush()
             if sideboard:
                 active_deck.sideboard.add(cname, num)
             else:
                 active_deck.deck.add(cname, num)
+            i += 1
         elif re.match('Sideboard$', cardset):
             sideboard = True
         else:
