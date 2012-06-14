@@ -509,7 +509,7 @@ def cmd_import(arg):
         else:
             print('Problem parsing \'' + cardset + '\'.')
     cmd_listall('')
-                
+
 # Global state.
 global_coloron = True
 active_deck = None
