@@ -115,8 +115,13 @@ def _scrapeDeck(id):
         page = urllib2.urlopen('http://www.mtgdeckbuilder.net/Decks/PrintableDeck/' + id)
         html = page.read()
     except urllib2.URLError:
+        print('Unable to read deck data.')
         return None
     soup = BeautifulSoup(html)
+    err = soup.find('div',{'class':'innerContentFrame'})
+    if err is not None:
+        print(err.string.strip())
+        return None
     dl = []
     dl.append(soup.span.strong.string)
     tr = soup.find_all('tr',style='line-height: 18px')[1]
@@ -203,7 +208,6 @@ def cmd_decklist(arg):
     for fn in os.listdir('.'):
         if fn.endswith('.deck'):
             print(pickle.load(open(fn, "rb")).name)
-#    print([f for f in os.listdir('.') if f.endswith('.deck')])
 
 def cmd_save(arg):
     """Save the active deck."""
@@ -495,6 +499,8 @@ def cmd_import(arg):
     if not arg:
         raise UsageError('<DECK_ID>')
     dl = _scrapeDeck(arg)
+    if dl is None:
+        return
     cmd_deck(dl.pop(0))
     assert_activedeck()
     sideboard = False
@@ -502,13 +508,15 @@ def cmd_import(arg):
     for cardset in dl:
         m = re.match('(\d+)\s+(.*$)', cardset)
         if m:
-            tot += int(m.group(1))
+            num = int(m.group(1))
+            cname = m.group(2)
+            tot += num
             sys.stdout.write('  {0} cards imported\r'.format(tot))
             sys.stdout.flush()
             if sideboard:
-                active_deck.sideboard.add(m.group(2), int(m.group(1)))
+                active_deck.sideboard.add(cname, num)
             else:
-                active_deck.deck.add(m.group(2), int(m.group(1)))
+                active_deck.deck.add(cname, num)
         elif re.match('Sideboard$', cardset):
             sideboard = True
         else:
