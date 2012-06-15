@@ -436,24 +436,11 @@ def parse_orlist(arg, cardlist=None):
     if m:
         d = int(m.group(1))
         arg = m.group(2)
-    tmplist = re.split('\s+OR\s+', arg)
-    
-    orlist = []
-    s = 0
-    for c in tmplist:
-        m = re.match('ANY\s+(.*$)', c)
-        if m:
-            s += len(active_deck.deck.listType(m.group(1)))
-            #print('ANY of type: ' + m.group(1) + ', s = ' + str(s))
-        else:
-            orlist.append(c.lower())
-            #print('Appended \'' + c.lower() + '\' to orlist')
-            
-    #print(orlist)
+    orlist = re.split('\s+OR\s+', arg)
     
     if any((c not in active_deck.deck.cards for c in orlist)):
         raise ImproperArgError('Cards are not in active deck.')
-    s += sum((active_deck.deck.cards[c] for c in orlist))
+    s = sum((active_deck.deck.cards[c] for c in orlist))
     if cardlist is not None:
         cardlist.extend(orlist)
     return (d, s)
@@ -503,28 +490,26 @@ def cmd_import(arg):
         return
     cmd_deck(dl.pop(0))
     assert_activedeck()
-    sideboard = False
+    pile = active_deck.deck
     i = 0
     tot = len(dl)-1
     for cardset in dl:
-        m = re.match('(\d+)\s+(.*$)', cardset)
+        m = re.match('(\d+)\s+(.*)$', cardset)
         if m:
             num = int(m.group(1))
             cname = m.group(2)
             sys.stdout.write('  Importing... {0:.0f}% complete\r' 
-                .format(float(i)/tot*100))
+                    .format(float(i)/tot*100))
             sys.stdout.flush()
-            if sideboard:
-                active_deck.sideboard.add(cname, num)
-            else:
-                active_deck.deck.add(cname, num)
+            if not pile.add(cname, num):
+                print('Unable to find card data for \'' + cname + '\'.')
             i += 1
         elif re.match('Sideboard$', cardset):
-            sideboard = True
+            pile = active_deck.sideboard
         else:
             print('Problem parsing \'' + cardset + '\'.')
     cmd_listall('')
-                
+
 # Global state.
 global_coloron = True
 active_deck = None
