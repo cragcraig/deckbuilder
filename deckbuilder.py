@@ -7,8 +7,6 @@ import sys
 import cPickle as pickle
 import webbrowser
 import os
-from bs4 import BeautifulSoup
-import urllib2
 
 import cards
 import deck
@@ -109,27 +107,6 @@ def assert_activedeck():
     if not active_deck:
         raise MissingDeckError
 
-def _scrapeDeck(id):
-    """Scrapes a deck-listing from mtgdeckbuilder.net given its ID."""
-    try:
-        page = urllib2.urlopen('http://www.mtgdeckbuilder.net/Decks/PrintableDeck/' + id)
-        html = page.read()
-    except urllib2.URLError:
-        print('Unable to read deck data.')
-        return None
-    soup = BeautifulSoup(html)
-    err = soup.find('div',{'class':'innerContentFrame'})
-    if err is not None:
-        print(err.string.strip())
-        return None
-    dl = []
-    dl.append(soup.span.strong.string)
-    tr = soup.find_all('tr',style='line-height: 18px')[1]
-    dl += [s.replace(u'\xa0',u'') 
-            for s in tr.stripped_strings
-            if not re.search('Creatures|Lands|Spells|Cards$', s)]
-    return dl
-        
 _ansicode = {
     'black': '\x1b[30m',
     'red': '\x1b[31m',
@@ -172,10 +149,14 @@ def mprint(cardcolor, s, bold=True):
 
 def boldprint(s):
     """Print a string in bold."""
+    print(boldstring(s))
+
+def boldstring(s):
+    """Return a string formatted with bold ansi codes."""
     if global_coloron:
-        print(_ansicode['bold'] + s + _ansicode['reset'])
+        return _ansicode['bold'] + s + _ansicode['reset']
     else:
-        print(s)
+        return s
 
 # Executeable commands.
 def cmd_exit(arg):
@@ -187,7 +168,7 @@ def cmd_help(arg):
     cprint('bold', '\nAvaliable commands:')
     w = max((len(h) for h in cmd_dict.iterkeys())) + 1
     for cmd in sorted(cmd_dict.keys()):
-        print(cmd.ljust(w) + " - " + cmd_dict[cmd].__doc__)
+        print(boldstring(cmd.ljust(w)) + " - " + cmd_dict[cmd].__doc__)
 
 def cmd_deck(arg):
     """Set the active deck."""
@@ -214,8 +195,8 @@ def cmd_save(arg):
     assert_activedeck()
     with open(deck.filename(active_deck.name), "wb") as f:
         pickle.dump(active_deck, f)
-    print('Saved deck \'' + active_deck.name + '\'. '
-          'To load use command \'deck ' + active_deck.name +'\'.')
+    print('Saved deck \'' + active_deck.name + '\'.')
+    print('To load use command \'deck ' + active_deck.name +'\'.')
 
 def cmd_deckname(arg):
     """Change the name of the active deck."""
@@ -334,7 +315,7 @@ def cmd_listside(arg, summarize=False):
         print('-nothing-'.center(80))
 
 def cmd_listall(arg):
-    """Print active deck listing, optionally filtered by the card Type."""
+    """Print active deck listing, optionally filtered by Type."""
     assert_activedeck()
     cmd_list(arg)
     cmd_listside(arg)
@@ -356,11 +337,12 @@ def cmd_link(arg):
     print(cards.url(arg))
 
 def cmd_web(arg):
-    """Open default web browser to: Gatherer given a card, a deck given an ID."""
+    """Open default web browser to a card or mtgdeckbuilder deck."""
     if not arg:
         raise UsageError('<CARD|DECK_ID>')
     elif re.match('^\d+$',arg):
-        webbrowser.open_new_tab('http://www.mtgdeckbuilder.net/Decks/ViewDeck/' + arg)
+        webbrowser.open_new_tab(
+            'http://www.mtgdeckbuilder.net/Decks/ViewDeck/' + arg)
     else:
         webbrowser.open_new_tab(cards.url(arg))
 
@@ -482,10 +464,10 @@ def cmd_cdist(arg):
                 '% of cards)') if n else ''
 
 def cmd_import(arg):
-    """Import a deck from <mtgdeckbuilder.net> using the deck's ID number."""
+    """Import a deck from mtgdeckbuilder.net by ID number."""
     if not arg:
         raise UsageError('<DECK_ID>')
-    dl = _scrapeDeck(arg)
+    dl = deck.scrapeDeckListing(arg)
     if dl is None:
         return
     cmd_deck(dl.pop(0))

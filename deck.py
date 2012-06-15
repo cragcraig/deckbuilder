@@ -1,6 +1,9 @@
 import math
 import random
 import re
+import urllib2
+
+from bs4 import BeautifulSoup
 
 import cards
 
@@ -182,6 +185,7 @@ class CardPile:
                         re.IGNORECASE), 
                self.list())
 
+
 class CardData:
     """Holds a dictionary of card data."""
     def __init__(self):
@@ -204,3 +208,26 @@ class CardData:
         l = [c.name for c in self.data.itervalues()]
         l.extend(self.data.keys())
         return list(set(l))
+
+
+def scrapeDeckListing(id):
+    """Scrapes a deck-listing from mtgdeckbuilder.net given its ID."""
+    try:
+        page = urllib2.urlopen(
+            'http://www.mtgdeckbuilder.net/Decks/PrintableDeck/' + id)
+        html = page.read()
+    except urllib2.URLError:
+        print('Unable to read deck data.')
+        return None
+    soup = BeautifulSoup(html)
+    err = soup.find('div',{'class':'innerContentFrame'})
+    if err is not None:
+        print(err.string.strip())
+        return None
+    dl = []
+    dl.append(soup.span.strong.string)
+    tr = soup.find_all('tr',style='line-height: 18px')[1]
+    dl += [s.replace(u'\xa0',u'') 
+            for s in tr.stripped_strings
+            if not re.search('Creatures|Lands|Spells|Cards$', s)]
+    return dl

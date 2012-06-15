@@ -1,9 +1,11 @@
-import BeautifulSoup
 import re
 import string
 import textwrap
 import unicodedata
 import urllib2
+
+from bs4 import BeautifulSoup
+
 
 def url(name):
     """Get the data url for a card."""
@@ -22,7 +24,9 @@ def _scrape(soup, title):
     if not scrape:
         return None
     value = scrape.find('div', attrs={'class': 'value'})
-    return unicodedata.normalize('NFKD', value.text).encode('ascii', 'xmlcharrefreplace').replace('&#8212;', ' -- ')
+    return unicodedata.normalize(
+        'NFKD', value.text).encode(
+            'ascii', 'xmlcharrefreplace').replace('&#8212;', ' -- ').strip()
 
 def _scrape_replaceunicode(soup, title):
     """Scrape a BeautifulSoup for the value div of the div with id=title."""
@@ -45,7 +49,7 @@ def _scrape_cost(soup, manaid):
     value = _scrape_raw(soup, manaid)
     if not value:
         return None
-    imgs = value.findAll('img')
+    imgs = value.find_all('img')
     l = [_alt_to_id(t['alt']) for t in imgs]
     return ''.join(l)
 
@@ -60,7 +64,7 @@ def _scrape_text(soup, title):
     value = _scrape_raw(soup, title)
     if not value:
         return None
-    boxes = value.findAll('div', attrs={'class': 'cardtextbox'})
+    boxes = value.find_all('div', attrs={'class': 'cardtextbox'})
     retl = [_replace_scrape_imgs(str(l)) for l in boxes]
     return string.join(retl, sep='\n')
 
@@ -120,7 +124,8 @@ _alt_to_sym = {'Green': 'G', 'Red': 'R', 'Black': 'B', 'Blue': 'U',
                'Phyrexian White': 'WP', 'Untap': 'Q'}
 
 # Numbers in English
-_eng_to_num = {'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6}
+_eng_to_num = {'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6,
+               'seven': 7, 'eight': 8, 'nine': 9}
 
 # Gatherer scrape div ids.
 scrapeid_cardstyles = ['', '_ctl05', '_ctl06']
@@ -152,7 +157,7 @@ class Card:
         self.loaded = False
 
     def load(self, soup=None):
-        """Attempts to scrape card data from gatherer.wizards.com.
+        """Attempts to scrape card data from <gatherer.wizards.com>.
         
         Reuses the given BeautifulSoup if not None. This is so double-sided
         cards do not need to request the same gather page data twice.
@@ -164,7 +169,7 @@ class Card:
                 html = response.read()
             except urllib2.URLError:
                 return
-            soup = BeautifulSoup.BeautifulSoup(html)
+            soup = BeautifulSoup(html)
         # Scrape data.
         style = self._checkCardstyle(soup)
         if style is None:
