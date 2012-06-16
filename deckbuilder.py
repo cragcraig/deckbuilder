@@ -24,7 +24,7 @@ class MissingDeckError(Exception):
 # Main routine
 def main():
     """Prompt and execute commands."""
-    cprint('bold','\n*** Magic: The Gathering Deck Builder ***')
+    boldprint('\n*** Magic: The Gathering Deck Builder ***')
     if 'readline' not in sys.modules:
         print('\n> The readline module is not avaliable.\n'
               '> Line editing and tab completion is disabled.')
@@ -564,6 +564,7 @@ def readline_init():
     readline.parse_and_bind('tab: complete')
     readline.set_completer(readline_completer)
     readline.set_completion_display_matches_hook(readline_printmatches)
+
 
 # Import readline, if avaliable
 try:
