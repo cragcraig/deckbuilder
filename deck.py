@@ -20,7 +20,8 @@ def choose(n, r):
 class Deck:
     """A deck of MtG cards.
     
-    Includes a deck, sideboard, and card data."""
+    Includes a deck, sideboard, and card data.
+    """
     def __init__(self, name):
         self.name = name
         self.cardData = CardData()
