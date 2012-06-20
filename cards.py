@@ -296,7 +296,7 @@ def scrapeCardPrice(cname, p=None):
     strs = list(soup.find('table',{'class':'prices_container'}).stripped_strings)
 
     keys = [k.replace(':','') for k in strs[::2]]
-    vals = [float(v.replace('$','')) for v in strs[1::2]]
+    vals = [float(v.replace('$','').replace(',','')) for v in strs[1::2]]
     prices = dict(zip(keys, vals))
     if p: # 'L' low, 'M' mean, or 'H' high
         if p not in prices:

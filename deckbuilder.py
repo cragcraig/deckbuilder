@@ -185,10 +185,11 @@ def cmd_deck(arg):
 
 def cmd_decklist(arg):
     """List the decks in the current directory."""
-    print('-'*15)
+    print('-' * 20)
     for fn in os.listdir('.'):
         if fn.endswith('.deck'):
             print(pickle.load(open(fn, "rb")).name)
+    print('')
 
 def cmd_save(arg):
     """Save the active deck."""
@@ -493,16 +494,49 @@ def cmd_import(arg):
     cmd_listall('')
 
 def cmd_price(arg):
-    """Get the price for a card"""
+    """Display the price for a card."""
     if not arg:
         raise UsageError('<CARD>')
     prices = cards.scrapeCardPrice(arg)
     if prices:
-        print('Low: $%.2f\n' % prices['L']
-                + 'Mean: $%.2f\n' % prices['M']
-                + 'High: $%.2f\n' % prices['H'])
+        print('-' * 20)
+        print('  Low:\t$%.2f\n' % prices['L']
+                + '  Mean:\t$%.2f\n' % prices['M']
+                + '  High:\t$%.2f\n' % prices['H'])
     else:
         print('Unable to find card data.')
+
+def cmd_cost(arg):
+    """Shows the estimated cost of a deck."""
+    if not arg:
+        arg = 'M'
+    if not re.match('L|M|H$',arg):
+        raise UsageError('[L|M|H]')
+    assert_activedeck()
+    sep = '-' * 80
+    print(sep)
+    boldprint(active_deck.name.center(80))
+    print(sep)
+    tot = 0
+    # print(str('Per Card').rjust(38) + str('Card Set').rjust(11))
+    for c in active_deck.deck.manaSorted():
+        card = active_deck.cardData.data[c]
+        tot += print_deckcardprice(active_deck.deck.cards[c], card, arg)
+    print('\n' + str('Total:').rjust(39) + str('$%.2f' % tot).rjust(9))
+
+def print_deckcardprice(count, card, p='M'):
+    """Print the price for a cardset in the active deck."""
+    if p is None:
+        return None
+    price = cards.scrapeCardPrice(card.name, p)
+    if price is None:
+        return None
+    tot = price * count
+    mprint(card.color(), ' ' +\
+           cards.cutoff_text(card.name, 24).ljust(25) +\
+           str('$%.2f x' % price).rjust(8) + str(count).rjust(3) + ' = ' +\
+           str('$%.2f' % tot).rjust(8))
+    return tot
 
 # Global state.
 global_coloron = True
@@ -534,7 +568,8 @@ cmd_dict = {
     'csdist': cmd_csdist,
     'cdist': cmd_cdist,
     'import': cmd_import,
-    'price': cmd_price}
+    'price': cmd_price,
+    'cost':cmd_cost}
 
 
 # Readline
