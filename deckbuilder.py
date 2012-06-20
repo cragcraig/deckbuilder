@@ -25,6 +25,8 @@ class MissingDeckError(Exception):
 def main():
     """Prompt and execute commands."""
     boldprint('\n*** Magic: The Gathering Deck Builder ***')
+    if sys.version_info[:2] < (2, 7):
+        print("Data scraping may fail with Python versions < 2.7")
     if 'readline' not in sys.modules:
         print('\n> The readline module is not avaliable.\n'
               '> Line editing and tab completion is disabled.')
