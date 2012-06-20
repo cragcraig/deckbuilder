@@ -497,9 +497,12 @@ def cmd_price(arg):
     if not arg:
         raise UsageError('<CARD>')
     prices = cards.scrapeCardPrice(arg)
-    print('Low: $%.2f\n' % prices['L']
-            + 'Mean: $%.2f\n' % prices['M']
-            + 'High: $%.2f\n' % prices['H'])
+    if prices:
+        print('Low: $%.2f\n' % prices['L']
+                + 'Mean: $%.2f\n' % prices['M']
+                + 'High: $%.2f\n' % prices['H'])
+    else:
+        print('Unable to find card data.')
 
 # Global state.
 global_coloron = True

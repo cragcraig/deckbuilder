@@ -285,13 +285,13 @@ def scrapeCardPrice(cname, p=None):
         html = page.read()
     except urllib2.URLError:
         print('URL Error')
-        return
+        return None
     soup = BeautifulSoup(html)
 
     err = soup.find('td',{'class':'cardinfo'}).string
     if err is not None:
-        print(err)
-        return 
+        # print(err)
+        return None
 
     strs = list(soup.find('table',{'class':'prices_container'}).stripped_strings)
 
