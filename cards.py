@@ -17,7 +17,7 @@ def cutoff_text(text, max_length):
     if len(text) > max_length:
         return text[:max_length - 3] + "..."
     return text
-
+    
 def _scrape(soup, title):
     """Scrape a BeautifulSoup for the value div of the div with id=title."""
     scrape = soup.find('div', id=title)
@@ -274,3 +274,34 @@ class Card:
         if not s:
             return None
         return ''.join(sorted(list(set(s))))
+
+def scrapeCardPrice(cname, p=None):
+    base = 'http://www.mtgvault.com/ViewCard_Popup.aspx?CardName=' 
+
+    req = urllib2.Request(base + cname.replace(' ','+').lower())
+    # print(req.get_full_url())
+    try:
+        page = urllib2.urlopen(req)
+        html = page.read()
+    except urllib2.URLError:
+        print('URL Error')
+        return
+    soup = BeautifulSoup(html)
+
+    err = soup.find('td',{'class':'cardinfo'}).string
+    if err is not None:
+        print(err)
+        return 
+
+    strs = list(soup.find('table',{'class':'prices_container'}).stripped_strings)
+
+    keys = [k.replace(':','') for k in strs[::2]]
+    vals = [float(v.replace('$','')) for v in strs[1::2]]
+    prices = dict(zip(keys, vals))
+    if p: # 'L' low, 'M' mean, or 'H' high
+        if p not in prices:
+            return None
+        else:
+            return prices[p]
+    else:
+        return prices

@@ -340,7 +340,7 @@ def cmd_web(arg):
     """Open default web browser to a card or mtgdeckbuilder deck."""
     if not arg:
         raise UsageError('<CARD|DECK_ID>')
-    elif re.match('^\d+$',arg):
+    elif re.match('\d+$',arg):
         webbrowser.open_new_tab(
             'http://www.mtgdeckbuilder.net/Decks/ViewDeck/' + arg)
     else:
@@ -492,6 +492,15 @@ def cmd_import(arg):
             print('Problem parsing \'' + cardset + '\'.')
     cmd_listall('')
 
+def cmd_price(arg):
+    """Get the price for a card"""
+    if not arg:
+        raise UsageError('<CARD>')
+    prices = cards.scrapeCardPrice(arg)
+    print('Low: $%.2f\n' % prices['L']
+            + 'Mean: $%.2f\n' % prices['M']
+            + 'High: $%.2f\n' % prices['H'])
+
 # Global state.
 global_coloron = True
 active_deck = None
@@ -521,7 +530,8 @@ cmd_dict = {
     'decklist': cmd_decklist,
     'csdist': cmd_csdist,
     'cdist': cmd_cdist,
-    'import': cmd_import}
+    'import': cmd_import,
+    'price': cmd_price}
 
 
 # Readline
