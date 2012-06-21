@@ -1,5 +1,6 @@
 import re
 import string
+import sys
 import textwrap
 import unicodedata
 import urllib2
@@ -168,8 +169,14 @@ class Card:
                 response = urllib2.urlopen(url(self.name))
                 html = response.read()
             except urllib2.URLError:
+                print('Unable to open url.')
                 return
             soup = BeautifulSoup(html)
+            if not len(soup):
+                print('Unable to parse html.')
+                if sys.version_info[:2] < (2, 7):
+                  print('You may need a newer version of Python.')
+                return
         # Scrape data.
         style = self._checkCardstyle(soup)
         if style is None:
