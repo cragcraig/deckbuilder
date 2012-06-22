@@ -63,7 +63,7 @@ def exec_cmd(cmdstr):
         else:
             print('%s is not a command. Try \'help\'.' % str(cmd))
     return True
-
+    
 def get_prompt():
     s = ''
     if active_deck:
@@ -444,7 +444,7 @@ def cmd_csdist(arg):
     print('-' * 34)
     for color in mdict.keys():
         n = mdict[color];
-        mprint(color, '  {' + color + '} x' + str(n) + 
+        mprint(color, ' {' + color + '} x' + str(n) + 
                 '\t(%.0f' % (float(n) / tot * 100) + 
                 '% of symbols)' ) if n else ''
 
@@ -459,7 +459,7 @@ def cmd_cdist(arg):
     print('-' * 47)
     for color in mdict.keys():
         n = mdict[color];
-        mprint(color, '  {' + color + '} x' + str(n) + 
+        mprint(color, ' {' + color + '} x' + str(n) + 
                 '\t(%.0f' % (float(n) / tot * 100) + '% of colors, ' +
                 '%.0f' % (float(n) / len(active_deck.deck.list()) * 100) +\
                 '% of cards)') if n else ''
@@ -506,8 +506,20 @@ def cmd_price(arg):
     else:
         print('Unable to find card data.')
 
+def cmd_costall(arg):
+    """Shows the estimated cost of the active deck."""
+    if not arg:
+        arg = 'M'
+    if not re.match('L|M|H$',arg):
+        raise UsageError('[L|M|H]')
+    assert_activedeck()
+    tot = cmd_cost(arg)
+    print('')
+    tot += cmd_costside(arg)
+    print('\n' + str('Total:').rjust(39) + str('$%.2f' % tot).rjust(9))
+
 def cmd_cost(arg):
-    """Shows the estimated cost of a deck."""
+    """Shows the estimated cost of the active main deck."""
     if not arg:
         arg = 'M'
     if not re.match('L|M|H$',arg):
@@ -522,8 +534,28 @@ def cmd_cost(arg):
     for c in active_deck.deck.manaSorted():
         card = active_deck.cardData.data[c]
         tot += print_deckcardprice(active_deck.deck.cards[c], card, arg)
-    print('\n' + str('Total:').rjust(39) + str('$%.2f' % tot).rjust(9))
-
+    print('\n' + str('Deck Subtotal:').rjust(39) + str('$%.2f' % tot).rjust(9))
+    return tot
+    
+def cmd_costside(arg):
+    """Shows the estimated cost of the active main deck."""
+    if not arg:
+        arg = 'M'
+    if not re.match('L|M|H$',arg):
+        raise UsageError('[L|M|H]')
+    assert_activedeck()
+    sep = '-' * 80
+    print(string.center(' Sideboard ', 80, '-'))
+    tot = 0
+    # print(str('Per Card').rjust(38) + str('Card Set').rjust(11))
+    for c in active_deck.sideboard.manaSorted():
+        card = active_deck.cardData.data[c]
+        tot += print_deckcardprice(active_deck.sideboard.cards[c], card, arg)
+    if tot == 0:
+        print('-nothing-'.center(80))
+    print('\n' + str('Sideboard Subtotal:').rjust(39) + str('$%.2f' % tot).rjust(9))
+    return tot
+    
 def print_deckcardprice(count, card, p='M'):
     """Print the price for a cardset in the active deck."""
     if p is None:
@@ -569,7 +601,7 @@ cmd_dict = {
     'cdist': cmd_cdist,
     'import': cmd_import,
     'price': cmd_price,
-    'cost':cmd_cost}
+    'cost':cmd_costall}
 
 
 # Readline
