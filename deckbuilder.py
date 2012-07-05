@@ -10,6 +10,7 @@ import os
 
 import cards
 import deck
+import utils
 
 # Custom exceptions
 class ImproperArgError(Exception):
@@ -61,6 +62,8 @@ def exec_cmd(cmdstr):
                 print('usage: ' + cmd + ' ' + str(e))
             except MissingDeckError:
                 print('No active deck.')
+            except cards.ScrapeError as e:
+                print('Scrape failed: ' + str(e))
             if 'readline' in sys.modules:
                 readline.add_history(cmdstr)
         else:
@@ -76,7 +79,7 @@ def get_prompt():
 def prompt_cmd():
     """Print command prompt for the current state."""
     try:
-        return raw_input(get_prompt()).strip()
+        return utils.asciify_decode(raw_input(get_prompt())).strip()
     except EOFError:
         cmd_exit('')
     except KeyboardInterrupt:
