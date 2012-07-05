@@ -5,7 +5,12 @@ import textwrap
 import unicodedata
 import urllib2
 
+import utils
 from bs4 import BeautifulSoup
+
+
+class ScrapeError(Exception):
+    pass
 
 
 def url(name):
@@ -25,9 +30,7 @@ def _scrape(soup, title):
     if not scrape:
         return None
     value = scrape.find('div', attrs={'class': 'value'})
-    return unicodedata.normalize(
-        'NFKD', value.text).encode(
-            'ascii', 'xmlcharrefreplace').replace('&#8212;', ' -- ').strip()
+    return utils.asciify_encode(value.text)
 
 def _scrape_replaceunicode(soup, title):
     """Scrape a BeautifulSoup for the value div of the div with id=title."""
@@ -169,13 +172,15 @@ class Card:
                 response = urllib2.urlopen(url(self.name))
                 html = response.read()
             except urllib2.URLError:
-                print('Unable to open url.')
+                raise ScrapeError('Unable to open url.')
                 return
             soup = BeautifulSoup(html)
             if not len(soup):
-                print('Unable to parse html.')
                 if sys.version_info[:2] < (2, 7):
-                  print('You may need a newer version of Python.')
+                    raise ScrapeError(
+                        'Unable to parse html, Upgrade to Python 2.7.')
+                else:
+                    raise ScrapeError('Unable to parse html.')
                 return
         # Scrape data.
         style = self._checkCardstyle(soup)
@@ -214,7 +219,8 @@ class Card:
         """
         for s in scrapeid_cardstyles:
             name =_scrape(soup, scrapeid_name % s)
-            if name and self.name and self.name.lower() == name.lower():
+            if (name and self.name and 
+                utils.asciify_encode(self.name.lower()) == name.lower()):
                 return s
         return None
 

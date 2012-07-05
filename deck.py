@@ -218,17 +218,15 @@ def scrapeDeckListing(id):
             'http://www.mtgdeckbuilder.net/Decks/PrintableDeck/' + id)
         html = page.read()
     except urllib2.URLError:
-        print('Unable to read deck data.')
-        return None
+        raise cards.ScrapeError('Unable to read deck data url.')
     soup = BeautifulSoup(html)
-    err = soup.find('div',{'class':'innerContentFrame'})
+    err = soup.find('div', {'class':'innerContentFrame'})
     if err is not None:
-        print(err.string.strip())
-        return None
+        raise cards.ScrapeError(err.string.strip())
     dl = []
     dl.append(soup.span.strong.string)
-    tr = soup.find_all('tr',style='line-height: 18px')[1]
-    dl += [s.replace(u'\xa0',u'') 
-            for s in tr.stripped_strings
-            if not re.search('Creatures|Lands|Spells|Cards$', s)]
+    tr = soup.find_all('tr', style='line-height: 18px')[1]
+    dl += [s.replace(u'\xa0', u'') 
+               for s in tr.stripped_strings
+               if not re.search('Creatures|Lands|Spells|Cards$', s)]
     return dl
