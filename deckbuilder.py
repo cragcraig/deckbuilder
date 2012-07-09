@@ -30,8 +30,8 @@ def main():
         print('Data scraping may fail with versions of Python < 2.7')
         print('You are using Python %d.%d' % sys.version_info[:2])
     if 'readline' not in sys.modules:
-        print('\n> The readline module is not avaliable.\n'
-              '> Line editing and tab completion is disabled.')
+        print('\nThe readline module is not avaliable.')
+        print('Line editing and tab completion is disabled.')
     cont = True
     cmd = ''
     prev = ''
@@ -45,7 +45,7 @@ def main():
 # Command interpreter.
 def exec_cmd(cmdstr):
     """Interpret a command."""
-    m = re.match('(\w+)\s*(.*)$', cmdstr)
+    m = re.match('(\w+)(?:\s+(.*))?$', cmdstr)
     if not m:
         print('Bad command.')
     else:
@@ -202,7 +202,6 @@ def cmd_save(arg):
     with open(deck.filename(active_deck.name), "wb") as f:
         pickle.dump(active_deck, f)
     print('Saved deck \'' + active_deck.name + '\'.')
-    print('To load use command \'deck ' + active_deck.name +'\'.')
 
 def cmd_deckname(arg):
     """Change the name of the active deck."""
