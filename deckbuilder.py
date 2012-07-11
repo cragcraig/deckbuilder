@@ -69,7 +69,7 @@ def exec_cmd(cmdstr):
         else:
             print('%s is not a command. Try \'help\'.' % str(cmd))
     return True
-
+    
 def get_prompt():
     s = ''
     if active_deck:
@@ -191,10 +191,11 @@ def cmd_deck(arg):
 
 def cmd_decklist(arg):
     """List the decks in the current directory."""
-    print('-'*15)
+    print('-' * 20)
     for fn in os.listdir('.'):
         if fn.endswith('.deck'):
             print(pickle.load(open(fn, "rb")).name)
+    print('')
 
 def cmd_save(arg):
     """Save the active deck."""
@@ -345,7 +346,7 @@ def cmd_web(arg):
     """Open default web browser to a card or mtgdeckbuilder deck."""
     if not arg:
         raise UsageError('<CARD|DECK_ID>')
-    elif re.match('^\d+$',arg):
+    elif re.match('\d+$',arg):
         webbrowser.open_new_tab(
             'http://www.mtgdeckbuilder.net/Decks/ViewDeck/' + arg)
     else:
@@ -448,7 +449,7 @@ def cmd_csdist(arg):
     print('-' * 34)
     for color in mdict.keys():
         n = mdict[color];
-        mprint(color, '  {' + color + '} x' + str(n) + 
+        mprint(color, ' {' + color + '} x' + str(n) + 
                 '\t(%.0f' % (float(n) / tot * 100) + 
                 '% of symbols)' ) if n else ''
 
@@ -463,7 +464,7 @@ def cmd_cdist(arg):
     print('-' * 47)
     for color in mdict.keys():
         n = mdict[color];
-        mprint(color, '  {' + color + '} x' + str(n) + 
+        mprint(color, ' {' + color + '} x' + str(n) + 
                 '\t(%.0f' % (float(n) / tot * 100) + '% of colors, ' +
                 '%.0f' % (float(n) / len(active_deck.deck.list()) * 100) +\
                 '% of cards)') if n else ''
@@ -478,23 +479,101 @@ def cmd_import(arg):
     cmd_deck(dl.pop(0))
     assert_activedeck()
     pile = active_deck.deck
-    tot = 0
+    i = 0
+    tot = len(dl)-1
     for cardset in dl:
         m = re.match('(\d+)\s+(.*)$', cardset)
         if m:
             num = int(m.group(1))
             cname = m.group(2)
-            if pile.add(cname, num):
-              tot += num
-              sys.stdout.write('  {0} cards imported\r'.format(tot))
-              sys.stdout.flush()
-            else:
-              print('Unable to find card data for \'' + cname + '\'.')
+            sys.stdout.write('  Importing... {0:.0f}% complete\r' 
+                    .format(float(i)/tot*100))
+            sys.stdout.flush()
+            if not pile.add(cname, num):
+                print('Unable to find card data for \'' + cname + '\'.')
+            i += 1
         elif re.match('Sideboard$', cardset):
             pile = active_deck.sideboard
         else:
             print('Problem parsing \'' + cardset + '\'.')
     cmd_listall('')
+
+def cmd_price(arg):
+    """Display the price for a card."""
+    if not arg:
+        raise UsageError('<CARD>')
+    prices = cards.scrapeCardPrice(arg)
+    if prices:
+        print('-' * 20)
+        print('  Low:\t$%.2f\n' % prices['L']
+                + '  Mean:\t$%.2f\n' % prices['M']
+                + '  High:\t$%.2f\n' % prices['H'])
+    else:
+        print('Unable to find card data.')
+
+def cmd_costall(arg):
+    """Shows the estimated cost of the active deck."""
+    if not arg:
+        arg = 'M'
+    if not re.match('L|M|H$',arg):
+        raise UsageError('[L|M|H]')
+    assert_activedeck()
+    tot = cmd_cost(arg)
+    print('')
+    tot += cmd_costside(arg)
+    print('\n' + str('Total:').rjust(39) + str('$%.2f' % tot).rjust(9))
+
+def cmd_cost(arg):
+    """Shows the estimated cost of the active main deck."""
+    if not arg:
+        arg = 'M'
+    if not re.match('L|M|H$',arg):
+        raise UsageError('[L|M|H]')
+    assert_activedeck()
+    sep = '-' * 80
+    print(sep)
+    boldprint(active_deck.name.center(80))
+    print(sep)
+    tot = 0
+    # print(str('Per Card').rjust(38) + str('Card Set').rjust(11))
+    for c in active_deck.deck.manaSorted():
+        card = active_deck.cardData.data[c]
+        tot += print_deckcardprice(active_deck.deck.cards[c], card, arg)
+    print('\n' + str('Deck Subtotal:').rjust(39) + str('$%.2f' % tot).rjust(9))
+    return tot
+    
+def cmd_costside(arg):
+    """Shows the estimated cost of the active main deck."""
+    if not arg:
+        arg = 'M'
+    if not re.match('L|M|H$',arg):
+        raise UsageError('[L|M|H]')
+    assert_activedeck()
+    sep = '-' * 80
+    print(string.center(' Sideboard ', 80, '-'))
+    tot = 0
+    # print(str('Per Card').rjust(38) + str('Card Set').rjust(11))
+    for c in active_deck.sideboard.manaSorted():
+        card = active_deck.cardData.data[c]
+        tot += print_deckcardprice(active_deck.sideboard.cards[c], card, arg)
+    if tot == 0:
+        print('-nothing-'.center(80))
+    print('\n' + str('Sideboard Subtotal:').rjust(39) + str('$%.2f' % tot).rjust(9))
+    return tot
+    
+def print_deckcardprice(count, card, p='M'):
+    """Print the price for a cardset in the active deck."""
+    if p is None:
+        return None
+    price = cards.scrapeCardPrice(card.name, p)
+    if price is None:
+        return None
+    tot = price * count
+    mprint(card.color(), ' ' +\
+           cards.cutoff_text(card.name, 24).ljust(25) +\
+           str('$%.2f x' % price).rjust(8) + str(count).rjust(3) + ' = ' +\
+           str('$%.2f' % tot).rjust(8))
+    return tot
 
 # Global state.
 global_coloron = True
@@ -525,7 +604,9 @@ cmd_dict = {
     'decklist': cmd_decklist,
     'csdist': cmd_csdist,
     'cdist': cmd_cdist,
-    'import': cmd_import}
+    'import': cmd_import,
+    'price': cmd_price,
+    'cost':cmd_costall}
 
 
 # Readline
