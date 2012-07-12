@@ -606,7 +606,8 @@ cmd_dict = {
     'cdist': cmd_cdist,
     'import': cmd_import,
     'price': cmd_price,
-    'cost':cmd_costall}
+    'cost': cmd_costall,
+}
 
 
 # Readline
