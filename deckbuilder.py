@@ -61,7 +61,8 @@ def exec_cmd(cmdstr):
             except UsageError as e:
                 print('usage: ' + cmd + ' ' + str(e))
             except MissingDeckError:
-                print('No active deck.')
+                print('No active deck. Create a new deck with the \'deck\' '
+                      'command.')
             except cards.ScrapeError as e:
                 print('Scrape failed: ' + str(e))
             if 'readline' in sys.modules:
@@ -71,10 +72,10 @@ def exec_cmd(cmdstr):
     return True
     
 def get_prompt():
-    s = ''
     if active_deck:
-        s = '[' + active_deck.name + ']'
-    return s + '# '
+        return active_deck.name + '> '
+    else:
+        return 'mtg> '
 
 def prompt_cmd():
     """Print command prompt for the current state."""
