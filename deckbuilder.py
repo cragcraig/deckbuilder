@@ -560,12 +560,13 @@ def cmd_cost(arg):
     # print(str('Per Card').rjust(38) + str('Card Set').rjust(11))
     for c in active_deck.deck.manaSorted():
         card = active_deck.cardData.data[c]
-        tot += print_deckcardprice(active_deck.deck.cards[c], card, arg)
+        cost = print_deckcardprice(active_deck.deck.cards[c], card, arg)
+        tot += cost if cost else 0
     print('\n' + str('Deck Subtotal:').rjust(39) + str('$%.2f' % tot).rjust(9))
     return tot
     
 def cmd_costside(arg):
-    """Shows the estimated cost of the active main deck."""
+    """Shows the estimated cost of the active sideboard."""
     if not arg:
         arg = 'M'
     if not re.match('L|M|H$',arg):
@@ -577,7 +578,8 @@ def cmd_costside(arg):
     # print(str('Per Card').rjust(38) + str('Card Set').rjust(11))
     for c in active_deck.sideboard.manaSorted():
         card = active_deck.cardData.data[c]
-        tot += print_deckcardprice(active_deck.sideboard.cards[c], card, arg)
+        cost = print_deckcardprice(active_deck.sideboard.cards[c], card, arg)
+        tot += cost if cost else 0
     if tot == 0:
         print('-nothing-'.center(80))
     print('\n' + str('Sideboard Subtotal:').rjust(39) + str('$%.2f' % tot).rjust(9))
@@ -589,6 +591,7 @@ def print_deckcardprice(count, card, p='M'):
         return None
     price = cards.scrapeCardPrice(card.name, p)
     if price is None:
+        print('Unable to get price for %s' % card.name)
         return None
     tot = price * count
     mprint(card.color(), ' ' +\
