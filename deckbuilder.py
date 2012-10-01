@@ -26,12 +26,28 @@ class MissingDeckError(Exception):
 def main():
     """Prompt and execute commands."""
     boldprint('\n*** Magic: The Gathering Deck Builder ***')
+    # Arguments
+    if len(sys.argv) > 1:
+      import argparse
+      parser = argparse.ArgumentParser()
+      parser.add_argument('deck', metavar='DECKFILE', type=str, nargs='?',
+                           default=None, help='an optional deckfile to load')
+      args = parser.parse_args()
+      if args.deck is not None:
+        try:
+          with open(args.deck, "rb") as f:
+            global active_deck
+            active_deck = pickle.load(f)
+        except IOError:
+          print('Unable to load deckfile: %s' % args.deck)
+    # Warning for Python below 2.7
     if sys.version_info[:2] < (2, 7):
         print('Data scraping may fail with versions of Python < 2.7')
         print('You are using Python %d.%d' % sys.version_info[:2])
     if 'readline' not in sys.modules:
         print('\nThe readline module is not avaliable.')
         print('Line editing and tab completion is disabled.')
+    # Main loop.
     cont = True
     cmd = ''
     prev = ''
@@ -87,14 +103,15 @@ def prompt_cmd():
         cmd_exit('')
     return ''
 
-def parse_numarg(arg):
+def parse_numarg(arg, default_num=1):
     """Parse an argument of the form <NUM> <ARG>. Returns (num, arg)."""
     if not arg:
         return (None, None)
     m = re.match('(\d*)\s*(.*)$', arg)
-    if m and m.group(1) and m.group(1) > 0:
-        return (m.group(2), int(m.group(1)))
-    raise ImproperArgError('Argument should be of the form <NUM> <ARG>.')
+    if m:
+        num = int(m.group(1)) if m.group(1) else default_num
+        return (m.group(2), num)
+    raise ImproperArgError('Argument should be of the form [<NUM>] <ARG>.')
 
 def print_deckcardline(count, card, reqType=None):
     """Print a snippet line for a card in the active deck.
@@ -228,9 +245,9 @@ def cmd_side(arg):
 
 def cmd_add(arg):
     """Add a card to the active deck."""
-    card, num = parse_numarg(arg)
+    card, num = parse_numarg(arg, 1)
     if not card or not num:
-        raise UsageError('<NUM> <CARD>')
+        raise UsageError('[<NUM>] <CARD>')
     assert_activedeck()
     if active_deck.deck.add(card, num):
         cmd_listall('')
@@ -239,9 +256,9 @@ def cmd_add(arg):
 
 def cmd_addside(arg):
     """Add a card to the active deck's sideboard."""
-    card, num = parse_numarg(arg)
+    card, num = parse_numarg(arg, 1)
     if not card or not num:
-        raise UsageError('<NUM> <CARD>')
+        raise UsageError('[<NUM>] <CARD>')
     assert_activedeck()
     if active_deck.sideboard.add(card, num):
         cmd_listall('')
@@ -250,23 +267,27 @@ def cmd_addside(arg):
 
 def cmd_remove(arg):
     """Remove a card from the active deck."""
-    card, num = parse_numarg(arg)
-    if not card or not num:
-        raise UsageError('<NUM> <CARD>')
+    card, num = parse_numarg(arg, None)
+    if not card:
+        raise UsageError('[<NUM]> <CARD>')
     assert_activedeck()
     if card.lower() not in active_deck.deck.cards:
         raise ImproperArgError('Card is not in active deck.')
+    if num is None:
+      num = active_deck.deck.cards[card]
     active_deck.deck.remove(card, num)
     cmd_listall('')
 
 def cmd_removeside(arg):
     """Remove a card from the active deck's sideboard."""
-    card, num = parse_numarg(arg)
-    if not card or not num:
-        raise UsageError('<NUM> <CARD>')
+    card, num = parse_numarg(arg, None)
+    if not card:
+        raise UsageError('[<NUM>] <CARD>')
     assert_activedeck()
     if card.lower() not in active_deck.sideboard.cards:
         raise ImproperArgError('Card is not in active deck\'s sideboard.')
+    if num is None:
+      num = active_deck.sideboard.cards[card]
     active_deck.sideboard.remove(card, num)
     cmd_listall('')
 
