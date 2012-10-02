@@ -27,26 +27,29 @@ def main():
     """Prompt and execute commands."""
     boldprint('\n*** Magic: The Gathering Deck Builder ***')
     # Arguments
-    if len(sys.argv) > 1:
-      import argparse
-      parser = argparse.ArgumentParser()
-      parser.add_argument('deck', metavar='DECKFILE', type=str, nargs='?',
-                           default=None, help='an optional deckfile to load')
-      args = parser.parse_args()
-      if args.deck is not None:
-        try:
-          with open(args.deck, "rb") as f:
-            global active_deck
-            active_deck = pickle.load(f)
-        except IOError:
-          print('Unable to load deckfile: %s' % args.deck)
+    try:
+        import argparse
+    except ImportError:
+        print('Missing module argparse, arguments not supported')
+    else:
+        parser = argparse.ArgumentParser()
+        parser.add_argument('deck', metavar='DECKFILE', type=str, nargs='?',
+                            default=None, help='an optional deckfile to load')
+        args = parser.parse_args()
+        if args.deck is not None:
+            try:
+                with open(args.deck, "rb") as f:
+                    global active_deck
+                    active_deck = pickle.load(f)
+            except IOError:
+                print('Unable to load deckfile: %s' % args.deck)
     # Warning for Python below 2.7
     if sys.version_info[:2] < (2, 7):
         print('Data scraping may fail with versions of Python < 2.7')
         print('You are using Python %d.%d' % sys.version_info[:2])
     if 'readline' not in sys.modules:
-        print('\nThe readline module is not avaliable.')
-        print('Line editing and tab completion is disabled.')
+        print('\nThe readline module is not avaliable')
+        print('Line editing and tab completion is disabled')
     # Main loop.
     cont = True
     cmd = ''
@@ -104,7 +107,7 @@ def prompt_cmd():
     return ''
 
 def parse_numarg(arg, default_num=1):
-    """Parse an argument of the form <NUM> <ARG>. Returns (num, arg)."""
+    """Parse an argument of the form [NUM] ARG. Returns (num, arg)."""
     if not arg:
         return (None, None)
     m = re.match('(\d*)\s*(.*)$', arg)
@@ -113,7 +116,7 @@ def parse_numarg(arg, default_num=1):
         return (m.group(2), num)
     raise ImproperArgError('Argument should be of the form [<NUM>] <ARG>.')
 
-def print_deckcardline(count, card, reqType=None):
+def print_deckcardline(count, card, star=' ', reqType=None):
     """Print a snippet line for a card in the active deck.
     
     If reqType is not none, skips printing the line if card does not have the
@@ -121,7 +124,9 @@ def print_deckcardline(count, card, reqType=None):
     """
     if reqType and not card.hasTypes(reqType.split()):
         return False
-    print(str(count).rjust(3), end=' '*3)
+    print(str(count).rjust(3), end='')
+    print(' %s ' % star, end='')
+
     mprint(card.color(),
            card.snippet())
     return True
@@ -198,7 +203,7 @@ def cmd_deck(arg):
     """Set the active deck."""
     global active_deck
     if not arg:
-        raise UsageError('<NAME>')
+        raise UsageError('NAME')
     try:
         with open(deck.filename(arg), "rb") as f:
             active_deck = pickle.load(f)
@@ -209,11 +214,10 @@ def cmd_deck(arg):
 
 def cmd_decklist(arg):
     """List the decks in the current directory."""
-    print('-' * 20)
+    print('')
     for fn in os.listdir('.'):
         if fn.endswith('.deck'):
             print(pickle.load(open(fn, "rb")).name)
-    print('')
 
 def cmd_save(arg):
     """Save the active deck."""
@@ -225,7 +229,7 @@ def cmd_save(arg):
 def cmd_deckname(arg):
     """Change the name of the active deck."""
     if not arg or len(arg) == 0:
-        raise UsageError('<NAME>')
+        raise UsageError('NAME')
     assert_activedeck()
     active_deck.name = arg
     print('Renamed active deck \'' + active_deck.name + '\'.')
@@ -233,7 +237,7 @@ def cmd_deckname(arg):
 def cmd_side(arg):
     """Move a card from the active deck to its sideboard."""
     if not arg:
-        raise UsageError('<CARD>')
+        raise UsageError('CARD')
     assert_activedeck()
     card = arg.lower()
     if card not in active_deck.deck.cards:
@@ -247,7 +251,7 @@ def cmd_add(arg):
     """Add a card to the active deck."""
     card, num = parse_numarg(arg, 1)
     if not card or not num:
-        raise UsageError('[<NUM>] <CARD>')
+        raise UsageError('[NUM] CARD')
     assert_activedeck()
     if active_deck.deck.add(card, num):
         cmd_listall('')
@@ -258,7 +262,7 @@ def cmd_addside(arg):
     """Add a card to the active deck's sideboard."""
     card, num = parse_numarg(arg, 1)
     if not card or not num:
-        raise UsageError('[<NUM>] <CARD>')
+        raise UsageError('[NUM] CARD')
     assert_activedeck()
     if active_deck.sideboard.add(card, num):
         cmd_listall('')
@@ -269,7 +273,7 @@ def cmd_remove(arg):
     """Remove a card from the active deck."""
     card, num = parse_numarg(arg, None)
     if not card:
-        raise UsageError('[<NUM]> <CARD>')
+        raise UsageError('[NUM] CARD')
     assert_activedeck()
     if card.lower() not in active_deck.deck.cards:
         raise ImproperArgError('Card is not in active deck.')
@@ -282,7 +286,7 @@ def cmd_removeside(arg):
     """Remove a card from the active deck's sideboard."""
     card, num = parse_numarg(arg, None)
     if not card:
-        raise UsageError('[<NUM>] <CARD>')
+        raise UsageError('[NUM] CARD')
     assert_activedeck()
     if card.lower() not in active_deck.sideboard.cards:
         raise ImproperArgError('Card is not in active deck\'s sideboard.')
@@ -306,7 +310,7 @@ def cmd_refreshdata(arg):
     print('Done.')
 
 def cmd_list(arg, summarize=False):
-    """Print active deck's deck listing. Show only cards with Type <ARG>."""
+    """Print active deck's deck listing, optionally filtered by Type."""
     assert_activedeck()
     sep = '-' * 80
     print(sep)
@@ -316,7 +320,7 @@ def cmd_list(arg, summarize=False):
     for c in active_deck.deck.manaSorted():
         card = active_deck.cardData.data[c]
         if print_deckcardline(active_deck.deck.cards[c], card,
-                              reqType=arg):
+                              active_deck.deck.getStar(c), reqType=arg):
             if summarize:
                 if card.summary():
                     print('       ' + card.summary())
@@ -325,7 +329,7 @@ def cmd_list(arg, summarize=False):
     print('Total: ' + str(ip))
 
 def cmd_listside(arg, summarize=False):
-    """Print active deck's sideboad listing. Show only cards with Type <ARG>."""
+    """Print active deck's sideboad listing, optionally filtered by Type."""
     assert_activedeck()
     sep = '-' * 80
     print(string.center(' Sideboard ', 80, '-'))
@@ -333,7 +337,7 @@ def cmd_listside(arg, summarize=False):
     for c in active_deck.sideboard.manaSorted():
         card = active_deck.cardData.data[c]
         if print_deckcardline(active_deck.sideboard.cards[c], card,
-                              reqType=arg):
+                              active_deck.sideboard.getStar(c), reqType=arg):
             if summarize:
                 if card.summary():
                     print('       ' + card.summary())
@@ -361,13 +365,13 @@ def cmd_sidesummary(arg):
 def cmd_link(arg):
     """Display a Gatherer link for a card."""
     if not arg:
-        raise UsageError('<CARD>')
+        raise UsageError('CARD')
     print(cards.url(arg))
 
 def cmd_web(arg):
     """Open default web browser to a card or mtgdeckbuilder deck."""
     if not arg:
-        raise UsageError('<CARD|DECK_ID>')
+        raise UsageError('CARD|DECK_ID')
     elif re.match('\d+$',arg):
         webbrowser.open_new_tab(
             'http://www.mtgdeckbuilder.net/Decks/ViewDeck/' + arg)
@@ -377,7 +381,7 @@ def cmd_web(arg):
 def cmd_card(arg):
     """Display card info from an online database."""
     if not arg:
-        raise UsageError('<CARD>')
+        raise UsageError('CARD')
     # Use preloaded data if already in active deck, otherwise fetch.
     if active_deck and arg.lower() in active_deck.cardData.data:
         card = active_deck.cardData.data[arg.lower()]
@@ -395,6 +399,31 @@ def cmd_card(arg):
     else:
         print('')
         mprint(card.color(), str(card))
+
+def cmd_star(arg):
+    """Mark a card with the optionally provided symbol."""
+    if not arg:
+        raise UsageError('CARD [SYMBOL]')
+    m = re.match('(.+?)(?:\s+(\S))?$', arg)
+    if not m:
+        raise UsageError('CARD [SYMBOL]')
+    card = m.group(1)
+    star = m.group(2) if m.group(2) else '*'
+    if len(star) != 1:
+        raise ImproperArgError('SYMBOL must be exactly one character.')
+    assert_activedeck()
+    if not card.lower() in active_deck.deck.cards:
+        raise ImproperArgError('Card doesn\'t exist in deck.')
+    active_deck.deck.star(card, star)
+
+def cmd_unstar(arg):
+    """Unmark a card."""
+    if not arg:
+        raise UsageError('CARD')
+    assert_activedeck()
+    if not arg.lower() in active_deck.deck.cards:
+        raise ImproperArgError('Card doesn\'t exist in deck.')
+    active_deck.deck.unstar(arg)
 
 def cmd_hand(arg):
     """Generate a random draw hand."""
@@ -418,8 +447,8 @@ def cmd_managram(arg):
 def cmd_prob(arg):
     """Probability of drawing a certain selection of cards."""
     if not arg:
-        raise UsageError('<NUM> <CARD> [OR <CARD> [OR ...]] [AND <NUM> '
-                             '<CARD> [OR <CARD> [OR ...]] [AND ...]]')
+        raise UsageError('NUM CARD [OR CARD [OR ...]] [AND NUM '
+                             'CARD [OR CARD [OR ...]] [AND ...]]')
     assert_activedeck()
     nlist = parse_andlist(arg)
     # Print actual probabilities.
@@ -494,7 +523,7 @@ def cmd_cdist(arg):
 def cmd_import(arg):
     """Import a deck from mtgdeckbuilder.net by ID number."""
     if not arg:
-        raise UsageError('<DECK_ID>')
+        raise UsageError('DECK_ID')
     dl = deck.scrapeDeckListing(arg)
     if dl is None:
         return
@@ -523,7 +552,7 @@ def cmd_import(arg):
 def cmd_price(arg):
     """Display the price for a card."""
     if not arg:
-        raise UsageError('<CARD>')
+        raise UsageError('CARD')
     prices = cards.scrapeCardPrice(arg)
     if prices:
         print('-' * 20)
@@ -611,6 +640,8 @@ cmd_dict = {
     'randhand': cmd_hand,
     'add': cmd_add,
     'rm': cmd_remove,
+    'star': cmd_star,
+    'unstar': cmd_unstar,
     'side': cmd_side,
     'sideadd': cmd_addside,
     'siderm': cmd_removeside,

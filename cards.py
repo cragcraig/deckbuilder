@@ -240,7 +240,7 @@ class Card:
     def __str__(self):
         ret = str(self.name) + '\n' +\
               'cost: '.ljust(10) + str(self.cost) +\
-              ' (' + str(self.convertedCost) + ')'
+              '  (' + str(self.convertedCost) + ')'
         if len(self.types):
             ret += '\n' + 'type:'.ljust(10)
         ret += ' '.join(self.types)

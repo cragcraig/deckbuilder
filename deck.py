@@ -97,6 +97,7 @@ class CardPile:
     """A collection of cards by name."""
     def __init__(self, cardData=None):
         self.cards = dict()
+        self._star = dict()
         self.cardData = cardData if cardData else CardData()
 
     def list(self):
@@ -132,13 +133,33 @@ class CardPile:
             return
         self.cards[card] -= num
         if self.cards[card] <= 0:
-            del self.cards[card]
+            self.clear(card)
 
     def clear(self, card):
         """Remove all copies of a card by name."""
         card = card.lower()
         if card in self.cards:
             del self.cards[card]
+        self.unstar(card)
+
+    def star(self, card, symbol='*'):
+        """Star a card."""
+        card = card.lower()
+        if card in self.cards:
+            self._star[card] = symbol[0]
+
+    def unstar(self, card):
+        """Unstar a card."""
+        card = card.lower()
+        if card in self._star:
+            del self._star[card]
+
+    def getStar(self, card):
+        """Check if a card is starred."""
+        card = card.lower()
+        if card in self._star:
+            return self._star[card]
+        return ' '
 
     def manaSorted(self):
         """Return a list of cards sorted by converted mana cost."""
