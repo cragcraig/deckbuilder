@@ -1,6 +1,7 @@
 #!/usr/bin/python
 from __future__ import print_function, with_statement
 
+import itertools
 import re
 import string
 import sys
@@ -11,6 +12,14 @@ import os
 import cards
 import deck
 import utils
+
+try:
+    import readline
+except ImportError:
+    pass
+
+# Readline
+_READLINE_REGEX = re.compile('(.+(?:AND|OR|\d+)\s+|\w+\s+)(.+)$')
 
 # Custom exceptions
 class ImproperArgError(Exception):
@@ -47,7 +56,10 @@ def main():
     if sys.version_info[:2] < (2, 7):
         print('Data scraping may fail with versions of Python < 2.7')
         print('You are using Python %d.%d' % sys.version_info[:2])
-    if 'readline' not in sys.modules:
+    # Init readline, if avaliable
+    if 'readline' in sys.modules:
+        readline_init()
+    else:
         print('\nThe readline module is not avaliable')
         print('Line editing and tab completion is disabled')
     # Main loop.
@@ -70,11 +82,12 @@ def exec_cmd(cmdstr):
     else:
         cmd = m.group(1)
         arg = m.group(2)
+        cmd_callable = get_cmd(cmd)
         if not cmd:
             print('Type a command. Try \'help\'.')
-        elif cmd in cmd_dict:
+        elif cmd_callable:
             try:
-                cmd_dict[cmd](arg)
+                cmd_callable(arg)
             except ImproperArgError as e:
                 print(str(e))
             except UsageError as e:
@@ -89,8 +102,16 @@ def exec_cmd(cmdstr):
         else:
             print('%s is not a command. Try \'help\'.' % str(cmd))
     return True
+
+def get_cmd(cmd_name):
+    """Get the command function for cmd_name."""
+    for cmds in cmd_dict.itervalues():
+        if cmd_name in cmds:
+            return cmds[cmd_name]
+    return None
     
 def get_prompt():
+    """Get the command prompt text."""
     if active_deck:
         return active_deck.name + '> '
     else:
@@ -194,13 +215,23 @@ def cmd_exit(arg):
 
 def cmd_help(arg):
     """Print help text."""
-    cprint('bold', '\nAvaliable commands:')
-    w = max((len(h) for h in cmd_dict.iterkeys())) + 1
-    for cmd in sorted(cmd_dict.keys()):
-        print(boldstring(cmd.ljust(w)) + " - " + cmd_dict[cmd].__doc__)
+    if arg:
+        cmd_callable = get_cmd(arg)
+        if cmd_callable:
+            print(cmd_callable.__doc__)
+            return
+    # Comprehensive help.
+    cprint('bold', 'Avaliable commands:\n')
+    w = max((len(h) for h in
+             itertools.chain.from_iterable(cmd_dict.itervalues()))) + 1
+    for title, cmds in sorted(cmd_dict.iteritems(), key=lambda t: t[0]):
+        boldprint(title)
+        for name, cmd in sorted(cmds.iteritems(), key=lambda t: t[0]):
+            print(' ' + name.ljust(w) + ' - ' + cmd.__doc__)
+        print('')
 
 def cmd_deck(arg):
-    """Set the active deck."""
+    """Create or load an active deck."""
     global active_deck
     if not arg:
         raise UsageError('NAME')
@@ -213,7 +244,7 @@ def cmd_deck(arg):
         print('Created new deck \'' + active_deck.name + '\'.')
 
 def cmd_decklist(arg):
-    """List the decks in the current directory."""
+    """List the saved decks in the current directory."""
     print('')
     for fn in os.listdir('.'):
         if fn.endswith('.deck'):
@@ -633,41 +664,52 @@ def print_deckcardprice(count, card, p='M'):
 global_coloron = True
 active_deck = None
 cmd_dict = {
-    'help': cmd_help,
-    'deck': cmd_deck,
-    'deckname': cmd_deckname,
-    'save': cmd_save,
-    'randhand': cmd_hand,
-    'add': cmd_add,
-    'rm': cmd_remove,
-    'star': cmd_star,
-    'unstar': cmd_unstar,
-    'side': cmd_side,
-    'sideadd': cmd_addside,
-    'siderm': cmd_removeside,
-    'size': cmd_stats,
-    'managram': cmd_managram,
-    'prob': cmd_prob,
-    'card': cmd_card,
-    'link': cmd_link,
-    'list': cmd_listall,
-    'summ': cmd_summary,
-    'summside': cmd_sidesummary,
-    'togglecolor': cmd_togglecolor,
-    'refreshdata': cmd_refreshdata,
-    'exit': cmd_exit,
-    'web': cmd_web,
-    'decklist': cmd_decklist,
-    'csdist': cmd_csdist,
-    'cdist': cmd_cdist,
-    'import': cmd_import,
-    'price': cmd_price,
-    'cost': cmd_costall,
+    'Save, Load, or Import Deck': {
+        'deck': cmd_deck,
+        'deckname': cmd_deckname,
+        'save': cmd_save,
+        'import': cmd_import,
+        'decklist': cmd_decklist,
+    },
+    'Modify Deck': {
+        'add': cmd_add,
+        'rm': cmd_remove,
+        'star': cmd_star,
+        'unstar': cmd_unstar,
+    },
+    'Modify Sideboard': {
+        'sideadd': cmd_addside,
+        'siderm': cmd_removeside,
+        'side': cmd_side,
+    },
+    'Display Deck': {
+        'list': cmd_listall,
+        'summ': cmd_summary,
+        'summside': cmd_sidesummary,
+        'cost': cmd_costall,
+    },
+    'Statistics': {
+        'size': cmd_stats,
+        'randhand': cmd_hand,
+        'managram': cmd_managram,
+        'prob': cmd_prob,
+        'csdist': cmd_csdist,
+        'cdist': cmd_cdist,
+    },
+    'Individual Cards': {
+        'card': cmd_card,
+        'price': cmd_price,
+        'link': cmd_link,
+        'web': cmd_web,
+    },
+    'System Commands': {
+        'refreshdata': cmd_refreshdata,
+        'togglecolor': cmd_togglecolor,
+        'help': cmd_help,
+        'exit': cmd_exit,
+    },
 }
 
-
-# Readline
-_readline_regexp = '(.+(?:AND|OR|\d+)\s+|\w+\s+)(.+)$'
 
 def readline_completer(text, state):
     """The GNU readline completer function."""
@@ -675,7 +717,7 @@ def readline_completer(text, state):
     if not re.search('\s', text):
         l = filter(lambda k: re.match(text, k), cmd_dict.iterkeys())
     elif active_deck:
-        m = re.match(_readline_regexp, text)
+        m = _READLINE_REGEX.match(text)
         if m:
             cards = active_deck.cardData.cardNames()
             l = [m.group(1) + c for c in
@@ -687,18 +729,18 @@ def readline_completer(text, state):
 def readline_printmatches(substitution, matches, longest_match_length):
     """Print multiple readline matches."""
     print('')
-    m = re.match(_readline_regexp, substitution)
+    m = _READLINE_REGEX.match(substitution)
     printmatches = []
     for mtext in matches:
         s = mtext
         if m:
-            k = re.match(_readline_regexp, mtext)
+            k = _READLINE_REGEX.match(mtext)
             s = k.group(2)
         printmatches.append(s)
     # Print matches.
     spacing = max((len(s) for s in printmatches))
     for s in printmatches:
-        print(s.ljust(spacing), end='  ')
+        print(s.ljust(spacing), end='   ')
     print('\n' + get_prompt() + substitution, end='')
 
 def readline_init():
@@ -707,15 +749,6 @@ def readline_init():
     readline.parse_and_bind('tab: complete')
     readline.set_completer(readline_completer)
     readline.set_completion_display_matches_hook(readline_printmatches)
-
-
-# Import readline, if avaliable
-try:
-    import readline
-except ImportError:
-    pass
-else:
-    readline_init()
 
 
 if __name__ == "__main__":
