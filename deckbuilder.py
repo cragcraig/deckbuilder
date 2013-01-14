@@ -39,7 +39,7 @@ def main():
     try:
         import argparse
     except ImportError:
-        print('Missing module argparse, arguments not supported')
+        print('Missing module argparse, arguments not supported.')
     else:
         parser = argparse.ArgumentParser()
         parser.add_argument('deck', metavar='DECKFILE', type=str, nargs='?',
@@ -54,14 +54,14 @@ def main():
                 print('Unable to load deckfile: %s' % args.deck)
     # Warning for Python below 2.7
     if sys.version_info[:2] < (2, 7):
-        print('Data scraping may fail with versions of Python < 2.7')
-        print('You are using Python %d.%d' % sys.version_info[:2])
+        print('Data scraping may fail with Python prior to version 2.7.')
+        print('You are using Python %d.%d.' % sys.version_info[:2])
     # Init readline, if avaliable
     if 'readline' in sys.modules:
         readline_init()
     else:
-        print('\nThe readline module is not avaliable')
-        print('Line editing and tab completion is disabled')
+        print('\nThe readline module is not avaliable,')
+        print('line editing and tab completion has been disabled.')
     # Main loop.
     cont = True
     cmd = ''
@@ -584,7 +584,7 @@ def cmd_price(arg):
     """Display the price for a card."""
     if not arg:
         raise UsageError('CARD')
-    prices = cards.scrapeCardPrice(arg)
+    prices = cards.scrape_card_price(arg)
     if prices:
         print('-' * 20)
         print('  Low:\t$%.2f\n' % prices['L']
@@ -597,8 +597,8 @@ def cmd_costall(arg):
     """Shows the estimated cost of the active deck."""
     if not arg:
         arg = 'M'
-    if not re.match('L|M|H$',arg):
-        raise UsageError('[L|M|H]')
+    if not re.match('low|medium|high$', arg):
+        raise UsageError('[low|medium|high]')
     assert_activedeck()
     tot = cmd_cost(arg)
     print('')
@@ -609,8 +609,8 @@ def cmd_cost(arg):
     """Shows the estimated cost of the active main deck."""
     if not arg:
         arg = 'M'
-    if not re.match('L|M|H$',arg):
-        raise UsageError('[L|M|H]')
+    if not re.match('low|medium|high$',arg):
+        raise UsageError('[low|medium|high]')
     assert_activedeck()
     sep = '-' * 80
     print(sep)
@@ -624,7 +624,7 @@ def cmd_cost(arg):
         tot += cost if cost else 0
     print('\n' + str('Deck Subtotal:').rjust(39) + str('$%.2f' % tot).rjust(9))
     return tot
-    
+
 def cmd_costside(arg):
     """Shows the estimated cost of the active sideboard."""
     if not arg:
@@ -645,11 +645,11 @@ def cmd_costside(arg):
     print('\n' + str('Sideboard Subtotal:').rjust(39) + str('$%.2f' % tot).rjust(9))
     return tot
     
-def print_deckcardprice(count, card, p='M'):
+def print_deckcardprice(count, card, p='medium'):
     """Print the price for a cardset in the active deck."""
     if p is None:
         return None
-    price = cards.scrapeCardPrice(card.name, p)
+    price = cards.scrape_card_price(card.name, p)
     if price is None:
         print('Unable to get price for %s' % card.name)
         return None

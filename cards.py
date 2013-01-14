@@ -288,11 +288,9 @@ class Card:
             return None
         return ''.join(sorted(list(set(s))))
 
-def scrapeCardPrice(cname, p=None):
+def scrape_card_price(cname, p=None):
     base = 'http://www.mtgvault.com/ViewCard_Popup.aspx?CardName=' 
-
     req = urllib2.Request(base + cname.replace(' ','+').lower())
-    # print(req.get_full_url())
     try:
         page = urllib2.urlopen(req)
         html = page.read()
@@ -301,20 +299,26 @@ def scrapeCardPrice(cname, p=None):
         return None
     soup = BeautifulSoup(html)
 
-    err = soup.find('td',{'class':'cardinfo'}).string
+    err = soup.find('td', {'class': 'cardinfo'}).string
     if err is not None:
-        # print(err)
         return None
 
-    strs = list(soup.find('table',{'class':'prices_container'}).stripped_strings)
+    strs = list(
+        soup.find('table', {'class': 'prices_container'}).stripped_strings)
 
     keys = [k.replace(':','') for k in strs[::2]]
     vals = [float(v.replace('$','').replace(',','')) for v in strs[1::2]]
     prices = dict(zip(keys, vals))
-    if p: # 'L' low, 'M' mean, or 'H' high
-        if p not in prices:
+    _price_type = {
+        'low': 'L',
+        'medium': 'M',
+        'high': 'H'}
+    if p not in _price_type and p is not None:
+        return None
+    if p:
+        if _price_type[p] not in prices:
             return None
         else:
-            return prices[p]
+            return prices[_price_type[p]]
     else:
         return prices
