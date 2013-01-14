@@ -588,7 +588,7 @@ def cmd_price(arg):
     if prices:
         print('-' * 20)
         print('  Low:\t$%.2f\n' % prices['L']
-                + '  Mean:\t$%.2f\n' % prices['M']
+                + '  Avg:\t$%.2f\n' % prices['M']
                 + '  High:\t$%.2f\n' % prices['H'])
     else:
         print('Unable to find card data.')
@@ -597,8 +597,8 @@ def cmd_costall(arg):
     """Shows the estimated cost of the active deck."""
     if not arg:
         arg = 'M'
-    if not re.match('low|medium|high$', arg):
-        raise UsageError('[low|medium|high]')
+    if not re.match('low|avg|high$', arg):
+        raise UsageError('[low|avg|high]')
     assert_activedeck()
     tot = cmd_cost(arg)
     print('')
@@ -609,8 +609,8 @@ def cmd_cost(arg):
     """Shows the estimated cost of the active main deck."""
     if not arg:
         arg = 'M'
-    if not re.match('low|medium|high$',arg):
-        raise UsageError('[low|medium|high]')
+    if not re.match('low|avg|high$',arg):
+        raise UsageError('[low|avg|high]')
     assert_activedeck()
     sep = '-' * 80
     print(sep)
@@ -645,7 +645,7 @@ def cmd_costside(arg):
     print('\n' + str('Sideboard Subtotal:').rjust(39) + str('$%.2f' % tot).rjust(9))
     return tot
     
-def print_deckcardprice(count, card, p='medium'):
+def print_deckcardprice(count, card, p='avg'):
     """Print the price for a cardset in the active deck."""
     if p is None:
         return None
@@ -686,7 +686,7 @@ cmd_dict = {
         'list': cmd_listall,
         'summ': cmd_summary,
         'summside': cmd_sidesummary,
-        'cost': cmd_costall,
+#        'cost': cmd_costall,  # Site changed.
     },
     'Statistics': {
         'size': cmd_stats,
@@ -698,7 +698,7 @@ cmd_dict = {
     },
     'Individual Cards': {
         'card': cmd_card,
-        'price': cmd_price,
+#        'price': cmd_price,  # Site changed.
         'link': cmd_link,
         'web': cmd_web,
     },
