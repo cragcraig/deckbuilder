@@ -531,7 +531,7 @@ def cmd_csdist(arg):
     print('-' * 34)
     for color in mdict.keys():
         n = mdict[color];
-        mprint(color, ' {' + color + '} x' + str(n) + 
+        mprint(color, ' {' + color + '} x ' + str(n) + 
                 '\t(%.0f' % (float(n) / tot * 100) + 
                 '% of symbols)' ) if n else ''
 
@@ -546,7 +546,7 @@ def cmd_cdist(arg):
     print('-' * 47)
     for color in mdict.keys():
         n = mdict[color];
-        mprint(color, ' {' + color + '} x' + str(n) + 
+        mprint(color, ' {' + color + '} x ' + str(n) + 
                 '\t(%.0f' % (float(n) / tot * 100) + '% of colors, ' +
                 '%.0f' % (float(n) / len(active_deck.deck.list()) * 100) +\
                 '% of cards)') if n else ''
