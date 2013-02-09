@@ -5,6 +5,7 @@ import itertools
 import re
 import string
 import sys
+import time
 import cPickle as pickle
 import webbrowser
 import os
@@ -73,15 +74,24 @@ def main():
         cont = exec_cmd(cmd)
         prev = cmd
 
-# Command interpreter.
-def exec_cmd(cmdstr):
-    """Interpret a command."""
-    m = re.match('(\w+)(?:\s+(.*))?$', cmdstr)
+def _parse_cmdline(cmdline):
+    """Parse a command line string. 
+
+    Returns:
+      Tuple (cmd, arg)
+    """
+    m = re.match('(\w+)(?:\s+(.*))?$', cmdline)
     if not m:
+      return (None, None)
+    return (m.group(1), m.group(2))
+
+# Command interpreter.
+def exec_cmd(cmdline):
+    """Interpret a command."""
+    cmd, arg = _parse_cmdline(cmdline)
+    if not cmd:
         print('Bad command.')
     else:
-        cmd = m.group(1)
-        arg = m.group(2)
         cmd_callable = get_cmd(cmd)
         if not cmd:
             print('Type a command. Try \'help\'.')
@@ -98,7 +108,7 @@ def exec_cmd(cmdstr):
             except cards.ScrapeError as e:
                 print('Scrape failed: ' + str(e))
             if 'readline' in sys.modules:
-                readline.add_history(cmdstr)
+                readline.add_history(cmdline)
         else:
             print('%s is not a command. Try \'help\'.' % str(cmd))
     return True
@@ -229,6 +239,50 @@ def cmd_help(arg):
         for name, cmd in sorted(cmds.iteritems(), key=lambda t: t[0]):
             print(' ' + name.ljust(w) + ' - ' + cmd.__doc__)
         print('')
+
+def _print_slowly(s, end='\n'):
+    for c in s:
+        print(c, end='')
+        sys.stdout.flush()
+        time.sleep(0.1)
+    print('', end=end)
+
+def _run_tutorial_cmd(cmdline):
+    """Runs a command string as if the user had typed it."""
+    cmd, arg = _parse_cmdline(cmdline)
+    cmd_callable = get_cmd(cmd)
+    if cmd_callable is None:
+        raise Exception('Bad tutorial command: %s' % cmd)
+    print(get_prompt(), end='')
+    sys.stdout.flush()
+    _print_slowly(cmdline)
+    cmd_callable(arg)
+
+
+def cmd_tutorial(arg):
+    """Run an introductory tutorial."""
+    _run_tutorial_cmd('deck tutorial')
+    time.sleep(0.25)
+    _run_tutorial_cmd('card Verdant Force')
+    time.sleep(1)
+    _run_tutorial_cmd('add 4 Verdant Force')
+    _run_tutorial_cmd('add 4 Fireball')
+    _run_tutorial_cmd('add 4 Goblin Sharpshooter')
+    _run_tutorial_cmd('add 4 Llanowar Elves')
+    _run_tutorial_cmd('add 4 Birds of Paradise')
+    _run_tutorial_cmd('add 4 Shivan Dragon')
+    _run_tutorial_cmd('add 4 Biomass Mutation')
+    _run_tutorial_cmd('add 4 Huntmaster of the Fells')
+    _run_tutorial_cmd('add 14 Forest')
+    _run_tutorial_cmd('add 14 Island')
+    _run_tutorial_cmd('prob 2 Island OR Forest')
+    time.sleep(1)
+    _run_tutorial_cmd('prob 5 Llanowar Elves OR Birds of Paradise '
+                      'OR Forest OR Island AND 2 Fireball')
+    time.sleep(1)
+    _run_tutorial_cmd('card Huntmaster of the Fells')
+    time.sleep(1)
+    _run_tutorial_cmd('summ Creature')
 
 def cmd_deck(arg):
     """Create or load an active deck."""
@@ -423,9 +477,9 @@ def cmd_card(arg):
         print('Unable to find card data.')
         return
     if card.cardback:
-        print('\n--- SIDE ONE ---')
+        print('\n--- FRONT FACE ---')
         mprint(card.color(), str(card))
-        print('\n--- SIDE TWO ---')
+        print('\n--- BACK FACE ---')
         mprint(card.cardback.color(), str(card.cardback))
     else:
         print('')
@@ -507,6 +561,7 @@ def parse_orlist(arg, cardlist=None):
         d = int(m.group(1))
         arg = m.group(2)
     orlist = re.split('\s+OR\s+', arg)
+    orlist = [c.lower() for c in orlist]
     
     if any((c not in active_deck.deck.cards for c in orlist)):
         raise ImproperArgError('Cards are not in active deck.')
@@ -706,6 +761,7 @@ cmd_dict = {
         'refreshdata': cmd_refreshdata,
         'togglecolor': cmd_togglecolor,
         'help': cmd_help,
+        'tutorial': cmd_tutorial,
         'exit': cmd_exit,
     },
 }
