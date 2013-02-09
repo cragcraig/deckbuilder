@@ -710,12 +710,16 @@ cmd_dict = {
     },
 }
 
+def iter_commands():
+    for t in cmd_dict.itervalues():
+        for c in t.iterkeys():
+            yield c
 
 def readline_completer(text, state):
     """The GNU readline completer function."""
     l = []
     if not re.search('\s', text):
-        l = filter(lambda k: re.match(text, k), cmd_dict.iterkeys())
+        l = filter(lambda k: re.match(text, k), iter_commands())
     elif active_deck:
         m = _READLINE_REGEX.match(text)
         if m:
