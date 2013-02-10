@@ -224,20 +224,25 @@ def cmd_exit(arg):
     sys.exit(0)
 
 def cmd_help(arg):
-    """Print help text."""
+    """Detailed help for a command; with no arguments lists all cmds.
+
+    Optional:
+      Command for which to provide detailed help.
+    """
+    # Detailed help for a command.
     if arg:
         cmd_callable = get_cmd(arg)
         if cmd_callable:
             print(cmd_callable.__doc__)
             return
-    # Comprehensive help.
+    # Comprehensive short help listing.
     cprint('bold', 'Avaliable commands:\n')
     w = max((len(h) for h in
              itertools.chain.from_iterable(cmd_dict.itervalues()))) + 1
     for title, cmds in sorted(cmd_dict.iteritems(), key=lambda t: t[0]):
         boldprint(title)
         for name, cmd in sorted(cmds.iteritems(), key=lambda t: t[0]):
-            print(' ' + name.ljust(w) + ' - ' + cmd.__doc__)
+            print(' ' + name.ljust(w) + ' - ' + cmd.__doc__.split('\n')[0])
         print('')
 
 def _print_slowly(s, end='\n'):
@@ -283,9 +288,14 @@ def cmd_tutorial(arg):
     _run_tutorial_cmd('card Huntmaster of the Fells')
     time.sleep(1)
     _run_tutorial_cmd('summ Creature')
+    print('')
+    print('Try \'help\' to view the full list of avaliable commands.')
 
 def cmd_deck(arg):
-    """Create or load an active deck."""
+    """Create or load an active deck.
+
+    Required: Deck name to load, or to create if it does not exist.
+    """
     global active_deck
     if not arg:
         raise UsageError('NAME')
@@ -312,7 +322,10 @@ def cmd_save(arg):
     print('Saved deck \'' + active_deck.name + '\'.')
 
 def cmd_deckname(arg):
-    """Change the name of the active deck."""
+    """Change the name of the active deck.
+
+    Required: The new deck name.
+    """
     if not arg or len(arg) == 0:
         raise UsageError('NAME')
     assert_activedeck()
@@ -320,7 +333,10 @@ def cmd_deckname(arg):
     print('Renamed active deck \'' + active_deck.name + '\'.')
 
 def cmd_side(arg):
-    """Move a card from the active deck to its sideboard."""
+    """Move a card from the active deck to its sideboard.
+
+    Required: The card name.
+    """
     if not arg:
         raise UsageError('CARD')
     assert_activedeck()
@@ -333,7 +349,10 @@ def cmd_side(arg):
     cmd_listall('')
 
 def cmd_add(arg):
-    """Add a card to the active deck."""
+    """Add a card to the active deck.
+
+    Required: The card name.
+    """
     card, num = parse_numarg(arg, 1)
     if not card or not num:
         raise UsageError('[NUM] CARD')
@@ -344,7 +363,10 @@ def cmd_add(arg):
         print('Unable to find card data.')
 
 def cmd_addside(arg):
-    """Add a card to the active deck's sideboard."""
+    """Add a card to the active deck's sideboard.
+
+    Required: The card name.
+    """
     card, num = parse_numarg(arg, 1)
     if not card or not num:
         raise UsageError('[NUM] CARD')
@@ -355,7 +377,10 @@ def cmd_addside(arg):
         print('Unable to find card data.')
 
 def cmd_remove(arg):
-    """Remove a card from the active deck."""
+    """Remove a card from the active deck.
+
+    Required: The card name.
+    """
     card, num = parse_numarg(arg, None)
     if not card:
         raise UsageError('[NUM] CARD')
@@ -368,7 +393,10 @@ def cmd_remove(arg):
     cmd_listall('')
 
 def cmd_removeside(arg):
-    """Remove a card from the active deck's sideboard."""
+    """Remove a card from the active deck's sideboard.
+
+    Required: The card name.
+    """
     card, num = parse_numarg(arg, None)
     if not card:
         raise UsageError('[NUM] CARD')
@@ -395,7 +423,11 @@ def cmd_refreshdata(arg):
     print('Done.')
 
 def cmd_list(arg, summarize=False):
-    """Print active deck's deck listing, optionally filtered by Type."""
+    """Print active deck's deck listing, optionally filtered by Type.
+
+    Optional:
+      A card Type or Sub-Type by which to filter.
+    """
     assert_activedeck()
     sep = '-' * 80
     print(sep)
@@ -414,7 +446,11 @@ def cmd_list(arg, summarize=False):
     print('Total: ' + str(ip))
 
 def cmd_listside(arg, summarize=False):
-    """Print active deck's sideboad listing, optionally filtered by Type."""
+    """Print active deck's sideboad listing, optionally filtered by Type.
+
+    Optional:
+      A card Type or Sub-Type by which to filter.
+    """
     assert_activedeck()
     sep = '-' * 80
     print(string.center(' Sideboard ', 80, '-'))
@@ -432,29 +468,47 @@ def cmd_listside(arg, summarize=False):
         print('-nothing-'.center(80))
 
 def cmd_listall(arg):
-    """Print active deck listing, optionally filtered by Type."""
+    """Print active deck listing, optionally filtered by Type.
+
+    Optional:
+      A card Type or Sub-Type by which to filter.
+    """
     assert_activedeck()
     cmd_list(arg)
     cmd_listside(arg)
 
 def cmd_summary(arg):
-    """Print a summary of cards in the deck, filtered by Type."""
+    """Print a summary of cards in the deck, filtered by Type.
+
+    Optional:
+      A card Type or Sub-Type by which to filter.
+    """
     assert_activedeck()
     cmd_list(arg, summarize=True)
 
 def cmd_sidesummary(arg):
-    """Print a summary of sideboarded cards, filtered by Type."""
+    """Print a summary of sideboarded cards, filtered by Type.
+
+    Optional:
+      A card Type or Sub-Type by which to filter.
+    """
     assert_activedeck()
     cmd_listside(arg, summarize=True)
 
 def cmd_link(arg):
-    """Display a Gatherer link for a card."""
+    """Display a Gatherer link for a card.
+
+    Required: The card name.
+    """
     if not arg:
         raise UsageError('CARD')
     print(cards.url(arg))
 
 def cmd_web(arg):
-    """Open default web browser to a card or mtgdeckbuilder deck."""
+    """Open default web browser to a card or mtgdeckbuilder deck.
+
+    Required: The card name or mtgdeckbuilder deck ID number.
+    """
     if not arg:
         raise UsageError('CARD|DECK_ID')
     elif re.match('\d+$',arg):
@@ -464,7 +518,10 @@ def cmd_web(arg):
         webbrowser.open_new_tab(cards.url(arg))
 
 def cmd_card(arg):
-    """Display card info from an online database."""
+    """Display card info from an online database.
+
+    Required: The card name.
+    """
     if not arg:
         raise UsageError('CARD')
     # Use preloaded data if already in active deck, otherwise fetch.
@@ -477,16 +534,19 @@ def cmd_card(arg):
         print('Unable to find card data.')
         return
     if card.cardback:
-        print('\n--- FRONT FACE ---')
+        print('\n--- FRONT/TOP FACE ---')
         mprint(card.color(), str(card))
-        print('\n--- BACK FACE ---')
+        print('\n--- BACK/BOTTOM FACE ---')
         mprint(card.cardback.color(), str(card.cardback))
     else:
         print('')
         mprint(card.color(), str(card))
 
 def cmd_star(arg):
-    """Mark a card with the optionally provided symbol."""
+    """Mark a card with the optionally provided symbol.
+
+    Required: The card name.
+    """
     if not arg:
         raise UsageError('CARD [SYMBOL]')
     m = re.match('(.+?)(?:\s+(\S))?$', arg)
@@ -502,7 +562,10 @@ def cmd_star(arg):
     active_deck.deck.star(card, star)
 
 def cmd_unstar(arg):
-    """Unmark a card."""
+    """Unmark a card.
+
+    Required: The card name.
+    """
     if not arg:
         raise UsageError('CARD')
     assert_activedeck()
@@ -529,11 +592,50 @@ def cmd_managram(arg):
         c = active_deck.deck.countConvertedManaFilter(i)
         print(str(i).rjust(4) + str(c).rjust(8) + '  ' + ('=' * c))
 
+def cmd_uberprob(arg):
+    """Incomplete, see 'help uberprob'.
+    
+    Supports expresson-style strings following this format:
+      Card Name -> The full card name.
+      P/T -> Power and Toughness as Integer expressions.
+      'Type' -> Card Type or Sub-Type.
+      "Text" -> Card has Text in the body of the card.
+      |Cost| -> Coverted mana cost as an Integer expression.
+      .C -> Card color, C is one of B,W,R,G,U.
+
+    Operators:
+      () -> Group multiple expressions.
+      | -> OR
+      & -> AND
+      ~ -> NOT
+
+    Integer expressions:
+      * -> Any value.
+      >X -> Any value greater than X, inclusive.
+      <X -> Any value less than X, inclusive.
+      [X,Y] -> Any value between X and Y, inclusive.
+      X -> Exactly the value X.
+      v -> A variable value (usually "X" or "*").
+    """
+    pass
+
 def cmd_prob(arg):
-    """Probability of drawing a certain selection of cards."""
+    """Probability of drawing a certain selection of cards.
+
+    Required: Expression following this format:
+      NUM CARD [OR CARD [OR ...]] [AND NUM CARD [OR CARD [OR ...]] [AND ...]]
+
+    Operator precedence from high to low:
+      OR, NUM, AND
+
+    Example precedence:
+      (2 (card OR card)) AND (3 (card OR card OR card) AND card)
+
+    Note: NUM indicates drawing a MINIMUM of that number. So "3 Fireball" will
+      match a hand with 3 OR MORE Fireballs.
+    """
     if not arg:
-        raise UsageError('NUM CARD [OR CARD [OR ...]] [AND NUM '
-                             'CARD [OR CARD [OR ...]] [AND ...]]')
+        raise UsageError('Invalid expression, see \'help prob\'.')
     assert_activedeck()
     nlist = parse_andlist(arg)
     # Print actual probabilities.
@@ -607,7 +709,10 @@ def cmd_cdist(arg):
                 '% of cards)') if n else ''
 
 def cmd_import(arg):
-    """Import a deck from mtgdeckbuilder.net by ID number."""
+    """Import a deck from mtgdeckbuilder.net by ID number.
+
+    Required: mtgdeckbuilder ID number.
+    """
     if not arg:
         raise UsageError('DECK_ID')
     dl = deck.scrapeDeckListing(arg)
@@ -636,7 +741,10 @@ def cmd_import(arg):
     cmd_listall('')
 
 def cmd_price(arg):
-    """Display the price for a card."""
+    """Display the price for a card.
+
+    Required: The card name.
+    """
     if not arg:
         raise UsageError('CARD')
     prices = cards.scrape_card_price(arg)
@@ -748,6 +856,7 @@ cmd_dict = {
         'randhand': cmd_hand,
         'managram': cmd_managram,
         'prob': cmd_prob,
+        'uberprob': cmd_uberprob,
         'csdist': cmd_csdist,
         'cdist': cmd_cdist,
     },
