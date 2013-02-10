@@ -226,8 +226,7 @@ def cmd_exit(arg):
 def cmd_help(arg):
     """Detailed help for a command; with no arguments lists all cmds.
 
-    Optional:
-      Command for which to provide detailed help.
+    Optional: Command for which to provide detailed help.
     """
     # Detailed help for a command.
     if arg:
@@ -425,8 +424,7 @@ def cmd_refreshdata(arg):
 def cmd_list(arg, summarize=False):
     """Print active deck's deck listing, optionally filtered by Type.
 
-    Optional:
-      A card Type or Sub-Type by which to filter.
+    Optional: A card Type or Sub-Type by which to filter.
     """
     assert_activedeck()
     sep = '-' * 80
@@ -448,8 +446,7 @@ def cmd_list(arg, summarize=False):
 def cmd_listside(arg, summarize=False):
     """Print active deck's sideboad listing, optionally filtered by Type.
 
-    Optional:
-      A card Type or Sub-Type by which to filter.
+    Optional: A card Type or Sub-Type by which to filter.
     """
     assert_activedeck()
     sep = '-' * 80
@@ -470,8 +467,7 @@ def cmd_listside(arg, summarize=False):
 def cmd_listall(arg):
     """Print active deck listing, optionally filtered by Type.
 
-    Optional:
-      A card Type or Sub-Type by which to filter.
+    Optional: A card Type or Sub-Type by which to filter.
     """
     assert_activedeck()
     cmd_list(arg)
@@ -480,8 +476,7 @@ def cmd_listall(arg):
 def cmd_summary(arg):
     """Print a summary of cards in the deck, filtered by Type.
 
-    Optional:
-      A card Type or Sub-Type by which to filter.
+    Optional: A card Type or Sub-Type by which to filter.
     """
     assert_activedeck()
     cmd_list(arg, summarize=True)
@@ -489,8 +484,7 @@ def cmd_summary(arg):
 def cmd_sidesummary(arg):
     """Print a summary of sideboarded cards, filtered by Type.
 
-    Optional:
-      A card Type or Sub-Type by which to filter.
+    Optional: A card Type or Sub-Type by which to filter.
     """
     assert_activedeck()
     cmd_listside(arg, summarize=True)
