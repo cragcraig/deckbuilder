@@ -125,7 +125,7 @@ _alt_to_sym = {'Green': 'G', 'Red': 'R', 'Black': 'B', 'Blue': 'U',
                'White': 'W', 'Variable Colorless': 'X', 'Tap': 'T',
                'Phyrexian Green': 'GP', 'Phyrexian Red': 'RP',
                'Phyrexian Black': 'BP', 'Phyrexian Blue': 'UP',
-               'Phyrexian White': 'WP', 'Untap': 'Q'}
+               'Phyrexian White': 'WP', 'Untap': 'Q', 'Snow': 'S'}
 
 # Numbers in English
 _eng_to_num = {'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6,
