@@ -387,7 +387,7 @@ def cmd_remove(arg):
     if card.lower() not in active_deck.deck.cards:
         raise ImproperArgError('Card is not in active deck.')
     if num is None:
-      num = active_deck.deck.cards[card]
+      num = active_deck.deck.cards[card.lower()]
     active_deck.deck.remove(card, num)
     cmd_listall('')
 
