@@ -703,10 +703,7 @@ def cmd_cdist(arg):
                 '% of cards)') if n else ''
 
 def cmd_import(arg):
-    """Import a deck from mtgdeckbuilder.net by ID number.
-
-    Required: mtgdeckbuilder ID number.
-    """
+    """Import a deck from mtgdeckbuilder.net by ID number."""
     if not arg:
         raise UsageError('DECK_ID')
     dl = deck.scrapeDeckListing(arg)
@@ -735,17 +732,16 @@ def cmd_import(arg):
     cmd_listall('')
 
 def cmd_price(arg):
-    """Display the price for a card.
-
-    Required: The card name.
-    """
+    """Display the price for a given card."""
     if not arg:
         raise UsageError('CARD')
-    prices = cards.scrape_card_price(arg)
-    if prices:
-        print('-' * 20)
+    (name, prices) = cards.scrape_card_price(arg)
+    if name:
+        print('')
+        print('{0:^25}'.format(cards.cutoff_text(name, 25)))
+        print('-' * 25)
         print('  Low:\t$%.2f\n' % prices['L']
-                + '  Avg:\t$%.2f\n' % prices['M']
+                + '  Mean:\t$%.2f\n' % prices['M']
                 + '  High:\t$%.2f\n' % prices['H'])
     else:
         print('Unable to find card data.')
@@ -754,8 +750,8 @@ def cmd_costall(arg):
     """Shows the estimated cost of the active deck."""
     if not arg:
         arg = 'M'
-    if not re.match('low|avg|high$', arg):
-        raise UsageError('[low|avg|high]')
+    if not re.match('L|M|H$', arg):
+        raise UsageError('[L|M|H]')
     assert_activedeck()
     tot = cmd_cost(arg)
     print('')
@@ -766,8 +762,8 @@ def cmd_cost(arg):
     """Shows the estimated cost of the active main deck."""
     if not arg:
         arg = 'M'
-    if not re.match('low|avg|high$',arg):
-        raise UsageError('[low|avg|high]')
+    if not re.match('L|M|H$',arg):
+        raise UsageError('[L|M|H]')
     assert_activedeck()
     sep = '-' * 80
     print(sep)
@@ -802,11 +798,11 @@ def cmd_costside(arg):
     print('\n' + str('Sideboard Subtotal:').rjust(39) + str('$%.2f' % tot).rjust(9))
     return tot
     
-def print_deckcardprice(count, card, p='avg'):
-    """Print the price for a cardset in the active deck."""
+def print_deckcardprice(count, card, p='M'):
+    """Print the price for a cardset."""
     if p is None:
         return None
-    price = cards.scrape_card_price(card.name, p)
+    price = cards.scrape_card_price(card.name, p)[1]
     if price is None:
         print('Unable to get price for %s' % card.name)
         return None
@@ -843,7 +839,7 @@ cmd_dict = {
         'list': cmd_listall,
         'summ': cmd_summary,
         'summside': cmd_sidesummary,
-#        'cost': cmd_costall,  # Site changed.
+        'cost': cmd_costall,
     },
     'Statistics': {
         'size': cmd_stats,
@@ -856,7 +852,7 @@ cmd_dict = {
     },
     'Individual Cards': {
         'card': cmd_card,
-#        'price': cmd_price,  # Site changed.
+        'price': cmd_price,
         'link': cmd_link,
         'web': cmd_web,
     },
