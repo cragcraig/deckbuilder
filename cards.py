@@ -290,26 +290,33 @@ class Card:
 
 
 def scrape_card_price(cname, p=None):
+    """Return a tuple containing scraped card name and a dict of prices"""
+    base = 'http://www.mtgvault.com/cards/search/?searchtype=name&q=' 
     req = urllib2.Request(base + cname.replace(' ','+').lower())
+    ERROR = (None, None)
     try:
         page = urllib2.urlopen(req)
         html = page.read()
     except urllib2.URLError as e:
-        print('URL Error: %s' % e)
-        return None
+        raise ScrapeError('URL Error: %s' % e)
+        return ERROR
     soup = BeautifulSoup(html)
-    # Price scraping is broken, website changed.
-
-    strs = list(
-        soup.find('table', {'class': 'prices_container'}).stripped_strings)
+    
+    try:
+        name = soup.find('a', {'class' : 'card-name'}).text.strip()
+        name = utils.asciify_utf8(name)
+    except AttributeError:
+        ScrapeError('Unable to scrape card price.')
+        return ERROR
+    res = soup.find('div', {'class' : 'view-card-left'})
+    strs = [s for s in res.stripped_strings]
 
     keys = [k.replace(':', '') for k in strs[::2]]
     vals = [float(v.replace('$', '').replace(',', '')) for v in strs[1::2]]
     prices = dict(zip(keys, vals))
-    if p:  # 'low', 'avg', 'high'
-        if p not in prices:
-            return None
-        else:
-            return prices[p]
+    if not p:
+        return (name, prices)
+    elif p in prices.keys():
+        return (name, prices[p])
     else:
-        return prices
+        return ERROR
